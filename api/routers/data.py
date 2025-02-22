@@ -1,7 +1,5 @@
-import urllib.parse
 from typing import Annotated
 
-import requests
 from requests.exceptions import HTTPError
 from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
@@ -9,7 +7,6 @@ from fastapi.responses import JSONResponse
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service
 from api.services.spotify_auth_service import SpotifyAuthService
 from api.services.spotify_data_service import SpotifyDataService, TopItemType
-from api.settings import Settings
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/data")
