@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     spotify_client_id: str
     spotify_client_secret: str
 
-    spotify_auth_user_scopes: str
+    spotify_auth_user_scope: str
     spotify_auth_redirect_uri: str
     spotify_auth_base_url: str
 
@@ -15,4 +15,4 @@ class Settings(BaseSettings):
 
     frontend_url: str
 
-    allowed_origins: str
+    allowed_origins: list[str]
