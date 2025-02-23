@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 COPY .env /app/.env
 COPY ./api /app/api
 
-CMD ["fastapi", "run", "api/main.py", "--port", "8000"]
+CMD ["fastapi", "run", "api/main.py", "--port", "8080"]
