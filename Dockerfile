@@ -2,12 +2,11 @@ FROM python:3.11.9-slim
 
 WORKDIR /app
 
-COPY requirements.txt /app
+COPY requirements.txt /app/requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
-COPY . /app
+COPY .env /app/.env
+COPY ./api /app/api
 
-EXPOSE 8000
-
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["fastapi", "run", "api/main.py", "--port", "8000"]
