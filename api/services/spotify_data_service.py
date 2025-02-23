@@ -22,7 +22,7 @@ class SpotifyDataService(SpotifyService):
             limit: int = 10
     ) -> list:
         params = {"time_range": time_range, "limit": limit}
-        url = f"{self.base_url}/me/top/{item_type}?" + urllib.parse.urlencode(params)
+        url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
 
         res = requests.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
 
