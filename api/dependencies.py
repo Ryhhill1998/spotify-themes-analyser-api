@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import Annotated
 from fastapi import Depends, Request, HTTPException
 
+from api.services.endpoint_requester import EndpointRequester
 from api.services.spotify_auth_service import SpotifyAuthService
 from api.services.spotify_data_service import SpotifyDataService
 from api.settings import Settings
@@ -21,6 +22,10 @@ def get_tokens_from_cookies(request: Request) -> tuple[str, str]:
         raise HTTPException(status_code=400, detail="Requests must include an access token and a refresh token.")
 
     return access_token, refresh_token
+
+
+def get_endpoint_requester() -> EndpointRequester:
+    return EndpointRequester()
 
 
 def get_spotify_auth_service(settings: Annotated[Settings, Depends(get_settings)]) -> SpotifyAuthService:
