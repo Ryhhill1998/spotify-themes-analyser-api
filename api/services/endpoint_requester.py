@@ -1,10 +1,10 @@
-import requests
-from requests import Response
+import httpx
+from httpx import Response
 
 
 class EndpointRequester:
     def __init__(self):
-        self.client = requests.Session()
+        self.client = httpx.AsyncClient()
 
     @staticmethod
     def _parse_response(res: Response):
@@ -12,10 +12,10 @@ class EndpointRequester:
         data = res.json()
         return data
 
-    def get(self, url: str, headers: dict[str, str]):
-        res = self.client.get(url=url, headers=headers)
+    async def get(self, url: str, headers: dict[str, str]):
+        res = await self.client.get(url=url, headers=headers)
         return self._parse_response(res)
 
-    def post(self, url: str, headers: dict[str, str], data: dict[str, str]):
-        res = self.client.post(url=url, headers=headers, data=data)
+    async def post(self, url: str, headers: dict[str, str], data: dict[str, str]):
+        res = await self.client.post(url=url, headers=headers, data=data)
         return self._parse_response(res)

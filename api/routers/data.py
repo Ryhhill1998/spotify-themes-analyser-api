@@ -23,7 +23,7 @@ async def get_top_tracks(
     try:
         top_tracks = spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
     except HTTPError:
-        refresh_data = spotify_auth_service.refresh_access_token(refresh_token=refresh_token)
+        refresh_data = await spotify_auth_service.refresh_access_token(refresh_token=refresh_token)
         access_token = refresh_data["access_token"]
         refresh_token = refresh_data["refresh_token"]
         top_tracks = spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)

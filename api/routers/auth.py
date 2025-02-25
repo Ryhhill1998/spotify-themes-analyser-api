@@ -54,7 +54,7 @@ async def callback(
         validate_state(stored_state=request.cookies["oauth_state"], received_state=state)
 
         # get access and refresh tokens from spotify API to allow future API calls on behalf of the user
-        tokens = spotify_auth_service.get_tokens_with_auth_code(code)
+        tokens = await spotify_auth_service.get_tokens_with_auth_code(code)
 
         response = create_custom_redirect_response(settings.frontend_url)
         set_response_cookie(response=response, key="access_token", value=tokens["access_token"])

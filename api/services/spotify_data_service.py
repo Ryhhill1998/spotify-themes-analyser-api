@@ -20,7 +20,7 @@ class SpotifyDataService(SpotifyService):
             endpoint_requester=endpoint_requester
         )
 
-    def get_top_items(
+    async def get_top_items(
             self,
             access_token: str,
             item_type: TopItemType,
@@ -29,4 +29,4 @@ class SpotifyDataService(SpotifyService):
     ) -> list:
         params = {"time_range": time_range, "limit": limit}
         url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
-        return self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+        return await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
