@@ -1,6 +1,5 @@
 from enum import Enum
 import urllib.parse
-import requests
 
 from api.services.endpoint_requester import EndpointRequester
 from api.services.spotify_service import SpotifyService

@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from requests.exceptions import HTTPError
 from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
+from httpx import HTTPStatusError
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service
 from api.services.spotify_auth_service import SpotifyAuthService
@@ -21,12 +21,12 @@ async def get_top_tracks(
     access_token, refresh_token = tokens
 
     try:
-        top_tracks = spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
-    except HTTPError:
+        top_tracks = await spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
+    except HTTPStatusError:
         refresh_data = await spotify_auth_service.refresh_access_token(refresh_token=refresh_token)
         access_token = refresh_data["access_token"]
         refresh_token = refresh_data["refresh_token"]
-        top_tracks = spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
+        top_tracks = await spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
 
     response = JSONResponse(content=top_tracks)
     set_response_cookie(response=response, key="access_token", value=access_token)
