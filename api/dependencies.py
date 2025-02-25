@@ -28,19 +28,27 @@ def get_endpoint_requester() -> EndpointRequester:
     return EndpointRequester()
 
 
-def get_spotify_auth_service(settings: Annotated[Settings, Depends(get_settings)]) -> SpotifyAuthService:
+def get_spotify_auth_service(
+        settings: Annotated[Settings, Depends(get_settings)],
+        endpoint_requester: Annotated[EndpointRequester, Depends(get_endpoint_requester)]
+) -> SpotifyAuthService:
     return SpotifyAuthService(
         client_id=settings.spotify_client_id,
         client_secret=settings.spotify_client_secret,
         base_url=settings.spotify_auth_base_url,
         redirect_uri=settings.spotify_auth_redirect_uri,
-        auth_scope=settings.spotify_auth_user_scope
+        auth_scope=settings.spotify_auth_user_scope,
+        endpoint_requester=endpoint_requester
     )
 
 
-def get_spotify_data_service(settings: Annotated[Settings, Depends(get_settings)]) -> SpotifyDataService:
+def get_spotify_data_service(
+        settings: Annotated[Settings, Depends(get_settings)],
+        endpoint_requester: Annotated[EndpointRequester, Depends(get_endpoint_requester)]
+) -> SpotifyDataService:
     return SpotifyDataService(
         client_id=settings.spotify_client_id,
         client_secret=settings.spotify_client_secret,
-        base_url=settings.spotify_data_base_url
+        base_url=settings.spotify_data_base_url,
+        endpoint_requester=endpoint_requester
     )
