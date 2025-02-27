@@ -2,7 +2,7 @@ from enum import Enum
 import urllib.parse
 
 from api.services.endpoint_requester import EndpointRequester
-from api.services.spotify_service import SpotifyService
+from api.services.spotify.spotify_service import SpotifyService
 
 
 class TopItemType(Enum):

@@ -2,7 +2,7 @@ import base64
 import urllib.parse
 
 from api.services.endpoint_requester import EndpointRequester
-from api.services.spotify_service import SpotifyService
+from api.services.spotify.spotify_service import SpotifyService
 
 
 class SpotifyAuthService(SpotifyService):

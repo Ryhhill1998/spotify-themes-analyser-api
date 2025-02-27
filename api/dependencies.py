@@ -3,8 +3,9 @@ from typing import Annotated
 from fastapi import Depends, Request, HTTPException
 
 from api.services.endpoint_requester import EndpointRequester
-from api.services.spotify_auth_service import SpotifyAuthService
-from api.services.spotify_data_service import SpotifyDataService
+from api.services.lyrics_service import LyricsService
+from api.services.spotify.spotify_auth_service import SpotifyAuthService
+from api.services.spotify.spotify_data_service import SpotifyDataService
 from api.settings import Settings
 
 
@@ -52,3 +53,10 @@ def get_spotify_data_service(
         base_url=settings.spotify_data_base_url,
         endpoint_requester=endpoint_requester
     )
+
+
+def get_lyrics_service(
+        settings: Annotated[Settings, Depends(get_settings)],
+        endpoint_requester: Annotated[EndpointRequester, Depends(get_endpoint_requester)]
+) -> LyricsService:
+    return LyricsService(base_url=settings.lyrics_base_url, endpoint_requester=endpoint_requester)
