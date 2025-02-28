@@ -1,5 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
+
+import httpx
 from fastapi import Depends, Request, HTTPException
 
 from api.services.endpoint_requester import EndpointRequester
@@ -26,7 +28,11 @@ def get_tokens_from_cookies(request: Request) -> tuple[str, str]:
 
 
 def get_endpoint_requester() -> EndpointRequester:
-    return EndpointRequester()
+    client = httpx.AsyncClient(timeout=None)
+
+    yield EndpointRequester(client)
+
+    client.aclose()
 
 
 def get_spotify_auth_service(

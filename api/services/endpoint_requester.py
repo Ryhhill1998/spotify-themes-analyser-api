@@ -3,8 +3,8 @@ from httpx import Response
 
 
 class EndpointRequester:
-    def __init__(self):
-        self.client = httpx.AsyncClient()
+    def __init__(self, client: httpx.AsyncClient):
+        self.client = client
 
     @staticmethod
     def _parse_response(res: Response):
@@ -13,9 +13,9 @@ class EndpointRequester:
         return data
 
     async def get(self, url: str, headers: dict[str, str] | None = None, params: dict[str, str] | None = None):
-        res = await self.client.get(url=url, headers=headers, params=params, timeout=None)
+        res = await self.client.get(url=url, headers=headers, params=params)
         return self._parse_response(res)
 
     async def post(self, url: str, data: dict[str, str], headers: dict[str, str] | None = None):
-        res = await self.client.post(url=url, headers=headers, data=data, timeout=None)
+        res = await self.client.post(url=url, headers=headers, data=data)
         return self._parse_response(res)
