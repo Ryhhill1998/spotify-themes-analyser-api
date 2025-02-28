@@ -12,7 +12,7 @@ class LyricsService:
     def _generate_lyrics_request_coroutine(self, params: dict[str, str]) -> Coroutine:
         url = f"{self.base_url}/lyrics"
 
-        coroutine = self.endpoint_requester.get(url=url, params=params)
+        coroutine = self.endpoint_requester.get(url=url, params=params, timeout=10.0)
 
         return coroutine
 

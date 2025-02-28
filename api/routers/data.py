@@ -1,3 +1,4 @@
+import time
 from typing import Annotated
 
 from fastapi import Depends, APIRouter
@@ -69,6 +70,8 @@ async def retrieve_lyrics_list(
         tracks_requested: list[LyricsRequest],
         lyrics_service: lyrics_service_dependency
 ) -> list[LyricsResponse]:
+    start = time.perf_counter()
     data = await lyrics_service.get_lyrics_list([track_req.dict() for track_req in tracks_requested])
-
+    end = time.perf_counter()
+    print(f"Process time: {end - start}s")
     return [LyricsResponse(**entry) for entry in data]
