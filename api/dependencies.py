@@ -27,12 +27,12 @@ def get_tokens_from_cookies(request: Request) -> tuple[str, str]:
     return access_token, refresh_token
 
 
-def get_endpoint_requester() -> EndpointRequester:
+async def get_endpoint_requester() -> EndpointRequester:
     client = httpx.AsyncClient(timeout=None)
 
     yield EndpointRequester(client)
 
-    client.aclose()
+    await client.aclose()
 
 
 def get_spotify_auth_service(
