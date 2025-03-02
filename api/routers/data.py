@@ -1,13 +1,12 @@
-import time
 from typing import Annotated
 
 from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
 from httpx import HTTPStatusError
-from pydantic import BaseModel
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
     get_lyrics_service
+from api.models import LyricsRequest, LyricsResponse
 from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
@@ -46,32 +45,11 @@ async def get_top_tracks(
     return response
 
 
-class LyricsRequest(BaseModel):
-    artist: str
-    track_title: str
-
-
-class LyricsResponse(LyricsRequest):
-    lyrics: str
-
-
-@router.post("/lyrics")
-async def retrieve_lyrics(
-        track_requested: LyricsRequest,
-        lyrics_service: lyrics_service_dependency
-) -> LyricsResponse:
-    data = await lyrics_service.get_lyrics(track_requested.dict())
-
-    return LyricsResponse(**data)
-
-
 @router.post("/lyrics-list")
 async def retrieve_lyrics_list(
-        tracks_requested: list[LyricsRequest],
+        lyrics_requests: list[LyricsRequest],
         lyrics_service: lyrics_service_dependency
 ) -> list[LyricsResponse]:
-    start = time.perf_counter()
-    data = await lyrics_service.get_lyrics_list([track_req.dict() for track_req in tracks_requested])
-    end = time.perf_counter()
-    print(f"Process time: {end - start}s")
-    return [LyricsResponse(**entry) for entry in data]
+    lyrics_list = await lyrics_service.get_lyrics_list(lyrics_requests)
+
+    return lyrics_list

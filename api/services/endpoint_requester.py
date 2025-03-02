@@ -1,3 +1,5 @@
+from typing import Any
+
 import httpx
 from httpx import Response
 
@@ -28,10 +30,11 @@ class EndpointRequester:
     async def post(
             self,
             url: str,
-            data: dict[str, str],
             headers: dict[str, str] | None = None,
+            data: dict[str, str] | None = None,
+            json: Any | None = None,
             timeout: float | None = None
     ):
-        res = await self.client.post(url=url, headers=headers, data=data, timeout=timeout)
+        res = await self.client.post(url=url, headers=headers, data=data, json=json, timeout=timeout)
 
         return self._parse_response(res)

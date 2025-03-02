@@ -1,6 +1,4 @@
-import asyncio
-from typing import Coroutine
-
+from api.models import LyricsRequest, LyricsResponse
 from api.services.endpoint_requester import EndpointRequester
 
 
@@ -9,27 +7,11 @@ class LyricsService:
         self.base_url = base_url
         self.endpoint_requester = endpoint_requester
 
-    def _generate_lyrics_request_coroutine(self, params: dict[str, str]) -> Coroutine:
-        url = f"{self.base_url}/lyrics"
+    async def get_lyrics_list(self, lyrics_requests: list[LyricsRequest]) -> list[LyricsResponse]:
+        url = f"{self.base_url}/lyrics-list"
 
-        coroutine = self.endpoint_requester.get(url=url, params=params, timeout=None)
+        data = await self.endpoint_requester.post(url=url, json=lyrics_requests, timeout=None)
 
-        return coroutine
+        lyrics_list = [LyricsResponse(**entry) for entry in data]
 
-    async def get_lyrics(self, track_requested: dict[str, str]) -> dict[str, str]:
-        coroutine = self._generate_lyrics_request_coroutine(track_requested)
-
-        data = await coroutine
-
-        return data
-
-    async def get_lyrics_list(self, tracks_requested: list[dict[str, str]]) -> list[dict[str, str]]:
-        tasks = []
-
-        for track_req in tracks_requested:
-            coroutine = self._generate_lyrics_request_coroutine(track_req)
-            tasks.append(coroutine)
-
-        data = await asyncio.gather(*tasks)
-
-        return data
+        return lyrics_list

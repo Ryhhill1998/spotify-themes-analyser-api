@@ -28,4 +28,7 @@ class SpotifyDataService(SpotifyService):
     ) -> list:
         params = {"time_range": time_range, "limit": limit}
         url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
-        return await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+
+        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+
+        return data
