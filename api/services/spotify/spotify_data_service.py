@@ -1,9 +1,7 @@
 from enum import Enum
 import urllib.parse
-from typing import Annotated
 
 from httpx import HTTPStatusError
-from pydantic import Field
 
 from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData
 from api.services.endpoint_requester import EndpointRequester

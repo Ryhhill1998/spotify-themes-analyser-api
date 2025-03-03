@@ -76,3 +76,25 @@ async def retrieve_lyrics_list(
     lyrics_list = await lyrics_service.get_lyrics_list(lyrics_requests)
 
     return lyrics_list
+
+
+@router.get("/emotional-profile")
+async def get_emotional_profile(
+        tokens: token_cookie_extraction_dependency,
+        spotify_data_service: spotify_data_service_dependency,
+        lyrics_service: lyrics_service_dependency,
+):
+    top_items_response = await spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
+    data = top_items_response.data
+    tokens = top_items_response.tokens
+
+    lyrics_requests = [LyricsRequest(artist=entry.artist, track_title=entry.name) for entry in data]
+    lyrics_list = await lyrics_service.get_lyrics_list(lyrics_requests)
+
+    response_content = [item.model_dump() for item in lyrics_list]
+    response = JSONResponse(content=response_content)
+
+    set_response_cookie(response=response, key="access_token", value=tokens.access_token)
+    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
+
+    return response

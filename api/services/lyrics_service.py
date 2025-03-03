@@ -10,7 +10,11 @@ class LyricsService:
     async def get_lyrics_list(self, lyrics_requests: list[LyricsRequest]) -> list[LyricsResponse]:
         url = f"{self.base_url}/lyrics-list"
 
-        data = await self.endpoint_requester.post(url=url, json=[item.model_dump() for item in lyrics_requests], timeout=None)
+        data = await self.endpoint_requester.post(
+            url=url,
+            json=[item.model_dump() for item in lyrics_requests],
+            timeout=None
+        )
 
         lyrics_list = [LyricsResponse(**entry) for entry in data]
 
