@@ -13,19 +13,19 @@ class LyricsResponse(LyricsRequest):
 class TopItem(BaseModel):
     id: str
     name: str
-    image_urls: str
+    images: list[dict]
     spotify_url: str
 
 
 class TopArtist(TopItem):
-    pass
+    genres: list[str]
 
 
 class TopTrack(TopItem):
     artist: str
     release_date: str
     explicit: bool
-    duration: int
+    duration_ms: int
     popularity: int
 
 

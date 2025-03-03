@@ -31,20 +31,6 @@ class SpotifyDataService(SpotifyService):
         )
         self.spotify_auth_service = spotify_auth_service
 
-    async def _get_top_items(
-            self,
-            access_token: str,
-            item_type: TopItemType,
-            time_range: str = "medium_term",
-            limit: int = 10
-    ) -> list[dict[str, str]]:
-        params = {"time_range": time_range, "limit": limit}
-        url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
-
-        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
-
-        return data
-
     @staticmethod
     def _create_top_track_object(data: dict) -> TopTrack:
         album = data["album"]
@@ -52,7 +38,7 @@ class SpotifyDataService(SpotifyService):
         top_track = TopTrack(
             id=data["id"],
             name=data["name"],
-            image_urls=album["images"],
+            images=album["images"],
             spotify_url=data["external_urls"]["spotify"],
             artist=data["artists"][0]["name"],
             release_date=album["release_date"],
@@ -68,19 +54,36 @@ class SpotifyDataService(SpotifyService):
         top_artist = TopArtist(
             id=data["id"],
             name=data["name"],
-            image_urls=data["album"]["images"],
-            spotify_url=data["external_urls"]["spotify"]
+            images=data["images"],
+            spotify_url=data["external_urls"]["spotify"],
+            genres=data["genres"]
         )
 
         return top_artist
 
-    def _create_top_item_object(self, data: dict, item_type: TopItemType) -> TopItem:
-        if item_type.value == TopItemType.TRACKS:
-            return self._create_top_track_object(data)
-        elif item_type.value == TopItemType.ARTISTS:
-            return self._create_top_artist_object(data)
+    def _create_top_items(self, data: list[dict], item_type: TopItemType) -> list[TopItem]:
+        if item_type == TopItemType.TRACKS:
+            return [self._create_top_track_object(data=entry) for entry in data]
+        elif item_type == TopItemType.ARTISTS:
+            return [self._create_top_artist_object(data=entry) for entry in data]
         else:
             raise ValueError("Invalid item type.")
+
+    async def _get_top_items(
+            self,
+            access_token: str,
+            item_type: TopItemType,
+            time_range: str = "medium_term",
+            limit: int = 10
+    ) -> list[TopItem]:
+        params = {"time_range": time_range, "limit": limit}
+        url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
+
+        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+
+        top_items = self._create_top_items(data=data["items"], item_type=item_type)
+
+        return top_items
 
     async def get_top_items(
             self,
@@ -91,7 +94,7 @@ class SpotifyDataService(SpotifyService):
             limit: int = 10
     ) -> TopItemsResponse:
         try:
-            data = await self._get_top_items(
+            top_items = await self._get_top_items(
                 access_token=access_token,
                 item_type=item_type,
                 time_range=time_range,
@@ -103,7 +106,7 @@ class SpotifyDataService(SpotifyService):
                 access_token = refresh_data["access_token"]
                 refresh_token = refresh_data["refresh_token"]
 
-                data = await self._get_top_items(
+                top_items = await self._get_top_items(
                     access_token=access_token,
                     item_type=item_type,
                     time_range=time_range,
@@ -111,7 +114,5 @@ class SpotifyDataService(SpotifyService):
                 )
             else:
                 raise
-
-        top_items = [self._create_top_item_object(data=entry, item_type=item_type) for entry in data]
 
         return TopItemsResponse(data=top_items, access_token=access_token, refresh_token=refresh_token)

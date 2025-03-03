@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
-from httpx import HTTPStatusError
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
     get_lyrics_service
@@ -21,26 +20,57 @@ spotify_data_service_dependency = Annotated[SpotifyDataService, Depends(get_spot
 lyrics_service_dependency = Annotated[LyricsService, Depends(get_lyrics_service)]
 
 
+async def get_top_items_response(
+        spotify_data_service: SpotifyDataService,
+        access_token: str,
+        refresh_token: str,
+        item_type: TopItemType
+) -> JSONResponse:
+    top_items_response = await spotify_data_service.get_top_items(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        item_type=item_type
+    )
+
+    response_content = [item.model_dump() for item in top_items_response.data]
+
+    response = JSONResponse(content=response_content)
+    set_response_cookie(response=response, key="access_token", value=top_items_response.access_token)
+    set_response_cookie(response=response, key="refresh_token", value=top_items_response.refresh_token)
+
+    return response
+
+
+@router.get("/top-artists")
+async def get_top_artists(
+        tokens: token_cookie_extraction_dependency,
+        spotify_data_service: spotify_data_service_dependency
+) -> JSONResponse:
+    access_token, refresh_token = tokens
+
+    response = await get_top_items_response(
+        spotify_data_service=spotify_data_service,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        item_type=TopItemType.ARTISTS
+    )
+
+    return response
+
+
 @router.get("/top-tracks")
 async def get_top_tracks(
         tokens: token_cookie_extraction_dependency,
-        spotify_data_service: spotify_data_service_dependency,
-        spotify_auth_service: spotify_auth_service_dependency,
-):
+        spotify_data_service: spotify_data_service_dependency
+) -> JSONResponse:
     access_token, refresh_token = tokens
 
-    try:
-        top_tracks = await spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
-    except HTTPStatusError:
-        refresh_data = await spotify_auth_service.refresh_access_token(refresh_token=refresh_token)
-        access_token = refresh_data["access_token"]
-        refresh_token = refresh_data["refresh_token"]
-
-        top_tracks = await spotify_data_service.get_top_items(access_token=access_token, item_type=TopItemType.TRACKS)
-
-    response = JSONResponse(content=top_tracks)
-    set_response_cookie(response=response, key="access_token", value=access_token)
-    set_response_cookie(response=response, key="refresh_token", value=refresh_token)
+    response = await get_top_items_response(
+        spotify_data_service=spotify_data_service,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        item_type=TopItemType.TRACKS
+    )
 
     return response
 
