@@ -1,6 +1,7 @@
 import base64
 import urllib.parse
 
+from api.models import TokenData
 from api.services.endpoint_requester import EndpointRequester
 from api.services.spotify.spotify_service import SpotifyService
 
@@ -41,7 +42,7 @@ class SpotifyAuthService(SpotifyService):
 
         return f"{self.base_url}/authorize?" + urllib.parse.urlencode(params)
 
-    async def _get_tokens(self, data: dict[str, str], refresh_token: str | None = None) -> dict[str, str]:
+    async def _get_tokens(self, data: dict[str, str], refresh_token: str | None = None) -> TokenData:
         url = f"{self.base_url}/api/token"
         headers = {"Authorization": f"Basic {self.auth_header}", "Content-Type": "application/x-www-form-urlencoded"}
 
@@ -50,16 +51,16 @@ class SpotifyAuthService(SpotifyService):
         access_token = token_data.get("access_token")
         refresh_token = token_data.get("refresh_token", refresh_token)
 
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        return TokenData(access_token=access_token, refresh_token=refresh_token)
 
-    async def refresh_access_token(self, refresh_token: str) -> dict[str, str]:
+    async def refresh_tokens(self, refresh_token: str) -> TokenData:
         data = {"grant_type": "refresh_token", "refresh_token": refresh_token}
 
         tokens = await self._get_tokens(data=data, refresh_token=refresh_token)
 
         return tokens
 
-    async def get_tokens_with_auth_code(self, auth_code: str):
+    async def create_tokens(self, auth_code: str) -> TokenData:
         data = {"code": auth_code, "redirect_uri": self.redirect_uri, "grant_type": "authorization_code"}
 
         tokens = await self._get_tokens(data=data)

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
     get_lyrics_service
-from api.models import LyricsRequest, LyricsResponse
+from api.models import LyricsRequest, LyricsResponse, TokenData
 from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
@@ -14,7 +14,7 @@ from api.utils import set_response_cookie
 router = APIRouter(prefix="/data")
 
 # initialise dependencies
-token_cookie_extraction_dependency = Annotated[tuple[str, str], Depends(get_tokens_from_cookies)]
+token_cookie_extraction_dependency = Annotated[TokenData, Depends(get_tokens_from_cookies)]
 spotify_auth_service_dependency = Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]
 spotify_data_service_dependency = Annotated[SpotifyDataService, Depends(get_spotify_data_service)]
 lyrics_service_dependency = Annotated[LyricsService, Depends(get_lyrics_service)]
@@ -22,21 +22,20 @@ lyrics_service_dependency = Annotated[LyricsService, Depends(get_lyrics_service)
 
 async def get_top_items_response(
         spotify_data_service: SpotifyDataService,
-        access_token: str,
-        refresh_token: str,
+        tokens: TokenData,
         item_type: TopItemType
 ) -> JSONResponse:
     top_items_response = await spotify_data_service.get_top_items(
-        access_token=access_token,
-        refresh_token=refresh_token,
+        tokens=tokens,
         item_type=item_type
     )
 
     response_content = [item.model_dump() for item in top_items_response.data]
-
     response = JSONResponse(content=response_content)
-    set_response_cookie(response=response, key="access_token", value=top_items_response.access_token)
-    set_response_cookie(response=response, key="refresh_token", value=top_items_response.refresh_token)
+
+    tokens = top_items_response.tokens
+    set_response_cookie(response=response, key="access_token", value=tokens.access_token)
+    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
 
     return response
 
@@ -46,12 +45,9 @@ async def get_top_artists(
         tokens: token_cookie_extraction_dependency,
         spotify_data_service: spotify_data_service_dependency
 ) -> JSONResponse:
-    access_token, refresh_token = tokens
-
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
-        access_token=access_token,
-        refresh_token=refresh_token,
+        tokens=tokens,
         item_type=TopItemType.ARTISTS
     )
 
@@ -63,12 +59,9 @@ async def get_top_tracks(
         tokens: token_cookie_extraction_dependency,
         spotify_data_service: spotify_data_service_dependency
 ) -> JSONResponse:
-    access_token, refresh_token = tokens
-
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
-        access_token=access_token,
-        refresh_token=refresh_token,
+        tokens=tokens,
         item_type=TopItemType.TRACKS
     )
 

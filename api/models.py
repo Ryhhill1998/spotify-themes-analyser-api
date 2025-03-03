@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+class TokenData(BaseModel):
+    access_token: str
+    refresh_token: str
+
+
 class LyricsRequest(BaseModel):
     artist: str
     track_title: str
@@ -31,5 +36,4 @@ class TopTrack(TopItem):
 
 class TopItemsResponse(BaseModel):
     data: list[TopItem]
-    access_token: str
-    refresh_token: str
+    tokens: TokenData

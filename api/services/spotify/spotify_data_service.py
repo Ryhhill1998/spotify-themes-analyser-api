@@ -1,9 +1,11 @@
 from enum import Enum
 import urllib.parse
+from typing import Annotated
 
 from httpx import HTTPStatusError
+from pydantic import Field
 
-from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist
+from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData
 from api.services.endpoint_requester import EndpointRequester
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_service import SpotifyService
@@ -12,6 +14,12 @@ from api.services.spotify.spotify_service import SpotifyService
 class TopItemType(Enum):
     ARTISTS = "artists"
     TRACKS = "tracks"
+
+
+class TimeRange(Enum):
+    SHORT = "short_term"
+    MEDIUM = "medium_term"
+    LONG = "long_term"
 
 
 class SpotifyDataService(SpotifyService):
@@ -61,7 +69,7 @@ class SpotifyDataService(SpotifyService):
 
         return top_artist
 
-    def _create_top_items(self, data: list[dict], item_type: TopItemType) -> list[TopItem]:
+    def _create_top_item_objects(self, data: list[dict], item_type: TopItemType) -> list[TopItem]:
         if item_type == TopItemType.TRACKS:
             return [self._create_top_track_object(data=entry) for entry in data]
         elif item_type == TopItemType.ARTISTS:
@@ -73,46 +81,43 @@ class SpotifyDataService(SpotifyService):
             self,
             access_token: str,
             item_type: TopItemType,
-            time_range: str = "medium_term",
-            limit: int = 10
+            time_range: str,
+            limit: int
     ) -> list[TopItem]:
         params = {"time_range": time_range, "limit": limit}
         url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
 
         data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
 
-        top_items = self._create_top_items(data=data["items"], item_type=item_type)
+        top_items = self._create_top_item_objects(data=data["items"], item_type=item_type)
 
         return top_items
 
     async def get_top_items(
             self,
-            access_token: str,
-            refresh_token: str,
+            tokens: TokenData,
             item_type: TopItemType,
-            time_range: str = "medium_term",
+            time_range: TimeRange = TimeRange.MEDIUM,
             limit: int = 10
     ) -> TopItemsResponse:
         try:
             top_items = await self._get_top_items(
-                access_token=access_token,
+                access_token=tokens.access_token,
                 item_type=item_type,
-                time_range=time_range,
+                time_range=time_range.value,
                 limit=limit
             )
         except HTTPStatusError as e:
             if e.response.status_code == 401:
-                refresh_data = await self.spotify_auth_service.refresh_access_token(refresh_token=refresh_token)
-                access_token = refresh_data["access_token"]
-                refresh_token = refresh_data["refresh_token"]
+                tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
 
                 top_items = await self._get_top_items(
-                    access_token=access_token,
+                    access_token=tokens.access_token,
                     item_type=item_type,
-                    time_range=time_range,
+                    time_range=time_range.value,
                     limit=limit
                 )
             else:
                 raise
 
-        return TopItemsResponse(data=top_items, access_token=access_token, refresh_token=refresh_token)
+        return TopItemsResponse(data=top_items, tokens=tokens)

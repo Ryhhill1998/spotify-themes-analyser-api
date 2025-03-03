@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request, HTTPException
 
+from api.models import TokenData
 from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
@@ -15,7 +16,7 @@ def get_settings() -> Settings:
     return Settings()
 
 
-def get_tokens_from_cookies(request: Request) -> tuple[str, str]:
+def get_tokens_from_cookies(request: Request) -> TokenData:
     cookies = request.cookies
     access_token = cookies.get("access_token")
     refresh_token = cookies.get("refresh_token")
@@ -23,7 +24,7 @@ def get_tokens_from_cookies(request: Request) -> tuple[str, str]:
     if not access_token or not refresh_token:
         raise HTTPException(status_code=400, detail="Requests must include an access token and a refresh token.")
 
-    return access_token, refresh_token
+    return TokenData(access_token=access_token, refresh_token=refresh_token)
 
 
 def get_endpoint_requester(request: Request) -> EndpointRequester:
