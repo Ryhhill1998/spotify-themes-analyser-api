@@ -5,6 +5,7 @@ from fastapi import Depends, Request, HTTPException
 
 from api.models import TokenData
 from api.services.analysis_service import AnalysisService
+from api.services.emotional_profile_service import EmotionalProfileService
 from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
@@ -72,3 +73,15 @@ def get_analysis_service(
         endpoint_requester: Annotated[EndpointRequester, Depends(get_endpoint_requester)]
 ) -> AnalysisService:
     return AnalysisService(base_url=settings.analysis_base_url, endpoint_requester=endpoint_requester)
+
+
+def get_emotional_profile_service(
+        spotify_data_service: Annotated[SpotifyDataService, Depends(get_spotify_data_service)],
+        lyrics_service: Annotated[LyricsService, Depends(get_lyrics_service)],
+        analysis_service: Annotated[AnalysisService, Depends(get_analysis_service)]
+) -> EmotionalProfileService:
+    return EmotionalProfileService(
+        spotify_data_service=spotify_data_service,
+        lyrics_service=lyrics_service,
+        analysis_service=analysis_service
+    )

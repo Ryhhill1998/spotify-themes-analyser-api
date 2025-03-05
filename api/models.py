@@ -61,3 +61,9 @@ class Emotion(BaseModel):
     name: str
     percentage: EmotionPercentage
     track_id: str
+
+
+class EmotionalProfileResponse(BaseModel):
+    emotions: list[Emotion]
+    tokens: TokenData
+
