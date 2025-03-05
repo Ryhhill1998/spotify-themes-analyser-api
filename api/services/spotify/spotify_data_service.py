@@ -124,19 +124,25 @@ class SpotifyDataService(SpotifyService):
 
         return top_items_response
 
-    async def get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItemResponse:
+    async def _get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItem:
         url = f"{self.base_url}/{item_type.value}/{item_id}"
 
+        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
+
+        item = self._create_top_item_object(data=data, item_type=item_type)
+
+        return item
+
+    async def get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItemResponse:
         try:
-            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
+            item = self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
         except HTTPStatusError as e:
             if e.response.status_code != 401:
                 raise
 
             tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
-            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
+            item = self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
 
-        item = self._create_top_item_object(data=data, item_type=item_type)
         item_response = TopItemResponse(data=item, tokens=tokens)
 
         return item_response
