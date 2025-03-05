@@ -45,7 +45,7 @@ class TopItemsResponse(BaseModel):
 
 
 class LyricsRequest(BaseModel):
-    id: str
+    track_id: str
     artist_name: str
     track_title: str
 
@@ -55,7 +55,7 @@ class LyricsResponse(LyricsRequest):
 
 
 class AnalysisRequest(BaseModel):
-    id: str
+    track_id: str
     lyrics: str
 
 

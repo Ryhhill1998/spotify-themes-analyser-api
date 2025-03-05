@@ -4,7 +4,7 @@ from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
 
 
-class EmotionalProfileService:
+class InsightsService:
     def __init__(
             self,
             spotify_data_service: SpotifyDataService,
@@ -23,12 +23,18 @@ class EmotionalProfileService:
 
         # get lyrics each track
         lyrics_requests = [
-            LyricsRequest(id=entry.id, artist_name=entry.artist.name, track_title=entry.name) for entry in data
+            LyricsRequest(
+                track_id=entry.id,
+                artist_name=entry.artist.name,
+                track_title=entry.name
+            )
+            for entry
+            in data
         ]
         lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
 
         # get top emotions for each set of lyrics
-        analysis_requests = [AnalysisRequest(id=entry.id, lyrics=entry.lyrics) for entry in lyrics_list]
+        analysis_requests = [AnalysisRequest(track_id=entry.track_id, lyrics=entry.lyrics) for entry in lyrics_list]
         top_emotions = await self.analysis_service.get_top_emotions(analysis_requests, limit=limit)
 
         # convert top emotions and tokens to emotional profile response object

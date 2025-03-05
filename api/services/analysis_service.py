@@ -15,7 +15,7 @@ class AnalysisService:
             lambda: {
                 "total": 0,
                 "max_track": {
-                    "id": None,
+                    "track_id": None,
                     "percentage": 0
                 }
             }
@@ -28,7 +28,7 @@ class AnalysisService:
                 total_emotions[emotion]["total"] += percentage
 
                 if percentage > total_emotions[emotion]["max_track"]["percentage"]:
-                    total_emotions[emotion]["max_track"] = {"id": entry["id"], "percentage": percentage}
+                    total_emotions[emotion]["max_track"] = {"track_id": entry["track_id"], "percentage": percentage}
 
         return total_emotions
 
@@ -42,7 +42,7 @@ class AnalysisService:
             )
             for emotion, info
             in total_emotions.items()
-            if (track_id := info["max_track"]["id"]) is not None
+            if (track_id := info["max_track"]["track_id"]) is not None
         ]
 
         return average_emotions

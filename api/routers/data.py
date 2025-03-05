@@ -4,10 +4,10 @@ from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
-    get_lyrics_service, get_analysis_service, get_emotional_profile_service
+    get_lyrics_service, get_analysis_service, get_insights_service
 from api.models import LyricsRequest, LyricsResponse, TokenData
 from api.services.analysis_service import AnalysisService
-from api.services.emotional_profile_service import EmotionalProfileService
+from api.services.emotional_profile_service import InsightsService
 from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
@@ -21,7 +21,7 @@ spotify_auth_service_dependency = Annotated[SpotifyAuthService, Depends(get_spot
 spotify_data_service_dependency = Annotated[SpotifyDataService, Depends(get_spotify_data_service)]
 lyrics_service_dependency = Annotated[LyricsService, Depends(get_lyrics_service)]
 analysis_service_dependency = Annotated[AnalysisService, Depends(get_analysis_service)]
-emotional_profile_service_dependency = Annotated[EmotionalProfileService, Depends(get_emotional_profile_service)]
+insights_service_dependency = Annotated[InsightsService, Depends(get_insights_service)]
 
 
 def create_json_response_and_set_token_cookies(content: list[dict] | dict, tokens: TokenData) -> JSONResponse:
@@ -137,11 +137,11 @@ async def retrieve_lyrics_list(
 @router.get("/emotional-profile")
 async def get_emotional_profile(
         tokens: token_cookie_extraction_dependency,
-        emotional_profile_service: emotional_profile_service_dependency,
+        insights_service: insights_service_dependency,
 ) -> JSONResponse:
-    emotional_profile_response = await emotional_profile_service.get_emotional_profile(tokens)
-    top_emotions = emotional_profile_response.emotions
-    tokens = emotional_profile_response.tokens
+    emotional_profile = await insights_service.get_emotional_profile(tokens)
+    top_emotions = emotional_profile.emotions
+    tokens = emotional_profile.tokens
 
     response_content = [emotion.model_dump() for emotion in top_emotions]
     response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
