@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 
 class TokenData(BaseModel):
@@ -6,18 +8,12 @@ class TokenData(BaseModel):
     refresh_token: str
 
 
-class LyricsRequest(BaseModel):
-    artist: str
-    track_title: str
-
-
-class LyricsResponse(LyricsRequest):
-    lyrics: str
-
-
-class TopItem(BaseModel):
+class TopItemBase(BaseModel):
     id: str
     name: str
+
+
+class TopItem(TopItemBase):
     images: list[dict]
     spotify_url: str
 
@@ -26,8 +22,12 @@ class TopArtist(TopItem):
     genres: list[str]
 
 
+class TrackArtist(TopItemBase):
+    pass
+
+
 class TopTrack(TopItem):
-    artist: str
+    artist: TrackArtist
     release_date: str
     explicit: bool
     duration_ms: int
@@ -37,3 +37,27 @@ class TopTrack(TopItem):
 class TopItemsResponse(BaseModel):
     data: list[TopItem]
     tokens: TokenData
+
+
+class LyricsRequest(BaseModel):
+    id: str
+    artist_name: str
+    track_title: str
+
+
+class LyricsResponse(LyricsRequest):
+    lyrics: str
+
+
+class AnalysisRequest(BaseModel):
+    id: str
+    lyrics: str
+
+
+EmotionPercentage = Annotated[float, Field(ge=0, le=1)]
+
+
+class Emotion(BaseModel):
+    name: str
+    percentage: EmotionPercentage
+    track_id: str

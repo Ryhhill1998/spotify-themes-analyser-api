@@ -3,7 +3,7 @@ import urllib.parse
 
 from httpx import HTTPStatusError
 
-from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData
+from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData, TrackArtist
 from api.services.endpoint_requester import EndpointRequester
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_service import SpotifyService
@@ -40,13 +40,16 @@ class SpotifyDataService(SpotifyService):
     @staticmethod
     def _create_top_track_object(data: dict) -> TopTrack:
         album = data["album"]
+        artist = data["artists"][0]
+
+        track_artist = TrackArtist(id=artist["id"], name=artist["name"])
 
         top_track = TopTrack(
             id=data["id"],
             name=data["name"],
             images=album["images"],
             spotify_url=data["external_urls"]["spotify"],
-            artist=data["artists"][0]["name"],
+            artist=track_artist,
             release_date=album["release_date"],
             explicit=data["explicit"],
             duration_ms=data["duration_ms"],
@@ -96,7 +99,7 @@ class SpotifyDataService(SpotifyService):
             tokens: TokenData,
             item_type: TopItemType,
             time_range: TimeRange = TimeRange.MEDIUM,
-            limit: int = 10
+            limit: int = 3
     ) -> TopItemsResponse:
         try:
             top_items = await self._get_top_items(

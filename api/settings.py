@@ -2,8 +2,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
     spotify_client_id: str
     spotify_client_secret: str
     spotify_auth_user_scope: str
@@ -13,5 +11,8 @@ class Settings(BaseSettings):
     frontend_url: str
 
     lyrics_base_url: str
+    analysis_base_url: str
 
     allowed_origins: list[str]
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

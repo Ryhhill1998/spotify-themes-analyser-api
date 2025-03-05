@@ -4,8 +4,9 @@ from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
-    get_lyrics_service
-from api.models import LyricsRequest, LyricsResponse, TokenData
+    get_lyrics_service, get_analysis_service
+from api.models import LyricsRequest, LyricsResponse, TokenData, AnalysisRequest
+from api.services.analysis_service import AnalysisService
 from api.services.lyrics_service import LyricsService
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
@@ -18,6 +19,7 @@ token_cookie_extraction_dependency = Annotated[TokenData, Depends(get_tokens_fro
 spotify_auth_service_dependency = Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]
 spotify_data_service_dependency = Annotated[SpotifyDataService, Depends(get_spotify_data_service)]
 lyrics_service_dependency = Annotated[LyricsService, Depends(get_lyrics_service)]
+analysis_service_dependency = Annotated[AnalysisService, Depends(get_analysis_service)]
 
 
 async def get_top_items_response(
@@ -83,15 +85,21 @@ async def get_emotional_profile(
         tokens: token_cookie_extraction_dependency,
         spotify_data_service: spotify_data_service_dependency,
         lyrics_service: lyrics_service_dependency,
-):
-    top_items_response = await spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
-    data = top_items_response.data
-    tokens = top_items_response.tokens
+        analysis_service: analysis_service_dependency,
+) -> JSONResponse:
+    top_tracks_response = await spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
+    data = top_tracks_response.data
+    tokens = top_tracks_response.tokens
 
-    lyrics_requests = [LyricsRequest(artist=entry.artist, track_title=entry.name) for entry in data]
+    lyrics_requests = [
+        LyricsRequest(id=entry.id, artist_name=entry.artist.name, track_title=entry.name) for entry in data
+    ]
     lyrics_list = await lyrics_service.get_lyrics_list(lyrics_requests)
 
-    response_content = [item.model_dump() for item in lyrics_list]
+    analysis_requests = [AnalysisRequest(id=entry.id, lyrics=entry.lyrics) for entry in lyrics_list]
+    top_emotions = await analysis_service.get_top_emotions(analysis_requests)
+
+    response_content = [emotion.model_dump() for emotion in top_emotions]
     response = JSONResponse(content=response_content)
 
     set_response_cookie(response=response, key="access_token", value=tokens.access_token)
