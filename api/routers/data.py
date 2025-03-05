@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
     get_lyrics_service, get_analysis_service, get_emotional_profile_service
-from api.models import LyricsRequest, LyricsResponse, TokenData, AnalysisRequest
+from api.models import LyricsRequest, LyricsResponse, TokenData
 from api.services.analysis_service import AnalysisService
 from api.services.emotional_profile_service import EmotionalProfileService
 from api.services.lyrics_service import LyricsService
@@ -24,6 +24,61 @@ analysis_service_dependency = Annotated[AnalysisService, Depends(get_analysis_se
 emotional_profile_service_dependency = Annotated[EmotionalProfileService, Depends(get_emotional_profile_service)]
 
 
+def create_json_response_and_set_token_cookies(content: list[dict] | dict, tokens: TokenData) -> JSONResponse:
+    response = JSONResponse(content=content)
+    set_response_cookie(response=response, key="access_token", value=tokens.access_token)
+    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
+
+    return response
+
+
+async def get_item_response(
+        item_id: str,
+        item_type: TopItemType,
+        tokens: TokenData,
+        spotify_data_service: SpotifyDataService
+) -> JSONResponse:
+    top_item_response = await spotify_data_service.get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
+    tokens = top_item_response.tokens
+
+    response_content = top_item_response.data.model_dump()
+    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+
+    return response
+
+
+@router.get("/tracks/{track_id}")
+async def get_track_by_id(
+        track_id: str,
+        tokens: token_cookie_extraction_dependency,
+        spotify_data_service: spotify_data_service_dependency
+) -> JSONResponse:
+    track_response = await get_item_response(
+        item_id=track_id,
+        item_type=TopItemType.TRACKS,
+        tokens=tokens,
+        spotify_data_service=spotify_data_service
+    )
+
+    return track_response
+
+
+@router.get("/artists/{artist_id}")
+async def get_artist_by_id(
+        artist_id: str,
+        tokens: token_cookie_extraction_dependency,
+        spotify_data_service: spotify_data_service_dependency
+) -> JSONResponse:
+    artist_response = await get_item_response(
+        item_id=artist_id,
+        item_type=TopItemType.ARTISTS,
+        tokens=tokens,
+        spotify_data_service=spotify_data_service
+    )
+
+    return artist_response
+
+
 async def get_top_items_response(
         spotify_data_service: SpotifyDataService,
         tokens: TokenData,
@@ -33,13 +88,10 @@ async def get_top_items_response(
         tokens=tokens,
         item_type=item_type
     )
+    tokens = top_items_response.tokens
 
     response_content = [item.model_dump() for item in top_items_response.data]
-    response = JSONResponse(content=response_content)
-
-    tokens = top_items_response.tokens
-    set_response_cookie(response=response, key="access_token", value=tokens.access_token)
-    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
+    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
 
     return response
 
@@ -92,9 +144,6 @@ async def get_emotional_profile(
     tokens = emotional_profile_response.tokens
 
     response_content = [emotion.model_dump() for emotion in top_emotions]
-    response = JSONResponse(content=response_content)
-
-    set_response_cookie(response=response, key="access_token", value=tokens.access_token)
-    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
+    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
 
     return response

@@ -38,10 +38,11 @@ class AnalysisService:
             Emotion(
                 name=emotion,
                 percentage=round(info["total"] / result_count, 2),
-                track_id=info["max_track"]["id"]
+                track_id=track_id
             )
             for emotion, info
             in total_emotions.items()
+            if (track_id := info["max_track"]["id"]) is not None
         ]
 
         return average_emotions

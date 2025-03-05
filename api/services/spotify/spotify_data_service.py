@@ -3,7 +3,7 @@ import urllib.parse
 
 from httpx import HTTPStatusError
 
-from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData, TrackArtist
+from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData, TrackArtist, TopItemResponse
 from api.services.endpoint_requester import EndpointRequester
 from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_service import SpotifyService
@@ -70,11 +70,11 @@ class SpotifyDataService(SpotifyService):
 
         return top_artist
 
-    def _create_top_item_objects(self, data: list[dict], item_type: TopItemType) -> list[TopItem]:
+    def _create_top_item_object(self, data: dict, item_type: TopItemType) -> TopItem:
         if item_type == TopItemType.TRACKS:
-            return [self._create_top_track_object(data=entry) for entry in data]
+            return self._create_top_track_object(data=data)
         elif item_type == TopItemType.ARTISTS:
-            return [self._create_top_artist_object(data=entry) for entry in data]
+            return self._create_top_artist_object(data=data)
         else:
             raise ValueError("Invalid item type.")
 
@@ -90,7 +90,7 @@ class SpotifyDataService(SpotifyService):
 
         data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
 
-        top_items = self._create_top_item_objects(data=data["items"], item_type=item_type)
+        top_items = [self._create_top_item_object(data=entry, item_type=item_type) for entry in data["items"]]
 
         return top_items
 
@@ -109,16 +109,34 @@ class SpotifyDataService(SpotifyService):
                 limit=limit
             )
         except HTTPStatusError as e:
-            if e.response.status_code == 401:
-                tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
-
-                top_items = await self._get_top_items(
-                    access_token=tokens.access_token,
-                    item_type=item_type,
-                    time_range=time_range.value,
-                    limit=limit
-                )
-            else:
+            if e.response.status_code != 401:
                 raise
 
-        return TopItemsResponse(data=top_items, tokens=tokens)
+            tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
+            top_items = await self._get_top_items(
+                access_token=tokens.access_token,
+                item_type=item_type,
+                time_range=time_range.value,
+                limit=limit
+            )
+
+        top_items_response = TopItemsResponse(data=top_items, tokens=tokens)
+
+        return top_items_response
+
+    async def get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItemResponse:
+        url = f"{self.base_url}/{item_type.value}/{item_id}"
+
+        try:
+            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
+        except HTTPStatusError as e:
+            if e.response.status_code != 401:
+                raise
+
+            tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
+            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
+
+        item = self._create_top_item_object(data=data, item_type=item_type)
+        item_response = TopItemResponse(data=item, tokens=tokens)
+
+        return item_response

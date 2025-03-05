@@ -34,6 +34,11 @@ class TopTrack(TopItem):
     popularity: int
 
 
+class TopItemResponse(BaseModel):
+    data: TopItem
+    tokens: TokenData
+
+
 class TopItemsResponse(BaseModel):
     data: list[TopItem]
     tokens: TokenData
