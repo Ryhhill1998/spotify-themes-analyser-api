@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from api.models import AnalysisRequest, Emotion
 from api.services.endpoint_requester import EndpointRequester
 
@@ -7,36 +9,31 @@ class AnalysisService:
         self.base_url = base_url
         self.endpoint_requester = endpoint_requester
 
-    async def get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
-        url = f"{self.base_url}/emotional-profile"
-
-        data = await self.endpoint_requester.post(
-            url=url,
-            json=[item.model_dump() for item in analysis_requests],
-            timeout=None
+    @staticmethod
+    def _aggregate_emotions(emotions_data: list[dict]):
+        total_emotions = defaultdict(
+            lambda: {
+                "total": 0,
+                "max_track": {
+                    "id": None,
+                    "percentage": 0
+                }
+            }
         )
 
-        result_count = len(data)
-
-        total_emotions = {}
-
-        for entry in data:
+        for entry in emotions_data:
             emotional_profile = entry["emotional_profile"]
 
             for emotion, percentage in emotional_profile.items():
-                if emotion not in total_emotions:
-                    total_emotions[emotion] = {
-                        "total": percentage,
-                        "max_track": {
-                            "id": entry["id"],
-                            "percentage": percentage
-                        }
-                    }
-                else:
-                    total_emotions[emotion]["total"] += percentage
-                    if percentage > total_emotions[emotion]["max_track"]["percentage"]:
-                        total_emotions[emotion]["max_track"] = {"id": entry["id"], "percentage": percentage}
+                total_emotions[emotion]["total"] += percentage
 
+                if percentage > total_emotions[emotion]["max_track"]["percentage"]:
+                    total_emotions[emotion]["max_track"] = {"id": entry["id"], "percentage": percentage}
+
+        return total_emotions
+
+    @staticmethod
+    def _get_average_emotions(total_emotions: dict, result_count: int) -> list[Emotion]:
         average_emotions = [
             Emotion(
                 name=emotion,
@@ -47,6 +44,25 @@ class AnalysisService:
             in total_emotions.items()
         ]
 
-        top_emotions = sorted(average_emotions, key=lambda e: e.percentage, reverse=True)[:limit]
+        return average_emotions
+
+    @staticmethod
+    def _get_top_emotions(emotions: list[Emotion], limit: int) -> list[Emotion]:
+        top_emotions = sorted(emotions, key=lambda e: e.percentage, reverse=True)[:limit]
+
+        return top_emotions
+
+    async def get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
+        url = f"{self.base_url}/emotional-profile"
+
+        data = await self.endpoint_requester.post(
+            url=url,
+            json=[item.model_dump() for item in analysis_requests],
+            timeout=None
+        )
+
+        total_emotions = self._aggregate_emotions(emotions_data=data)
+        average_emotions = self._get_average_emotions(total_emotions=total_emotions, result_count=len(data))
+        top_emotions = self._get_top_emotions(emotions=average_emotions, limit=limit)
 
         return top_emotions
