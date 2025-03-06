@@ -17,6 +17,7 @@ class InsightsService:
 
     async def get_emotional_profile(self, tokens: TokenData, limit: int = 5) -> EmotionalProfileResponse:
         # get top tracks and refreshed tokens (if expired)
+        # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
         top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
         data = top_tracks_response.data
         tokens = top_tracks_response.tokens

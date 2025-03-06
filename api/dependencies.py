@@ -5,7 +5,7 @@ from fastapi import Depends, Request, HTTPException
 
 from api.models import TokenData
 from api.services.analysis_service import AnalysisService
-from api.services.emotional_profile_service import InsightsService
+from api.services.insights_service import InsightsService
 from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
 from api.services.music.spotify_auth_service import SpotifyAuthService
