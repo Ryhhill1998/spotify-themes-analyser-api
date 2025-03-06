@@ -3,6 +3,7 @@ from api.services.endpoint_requester import EndpointRequester
 
 class LyricsServiceException(Exception):
     """Raised when LyricsService fails to process the API response."""
+
     def __init__(self, message):
         super().__init__(message)
 

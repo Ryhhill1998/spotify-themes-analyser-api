@@ -6,11 +6,15 @@ from httpx import Response
 
 
 class EndpointRequesterException(Exception):
+    """Raised when httpx.HTTPStatusError is any non-2XX value (except 401)."""
+
     def __init__(self, message: str = "Failed to make request"):
         super().__init__(message)
 
 
 class EndpointRequesterUnauthorisedException(EndpointRequesterException):
+    """Raised when httpx.HTTPStatusError is 401."""
+
     def __init__(self, message: str = "Unauthorized"):
         super().__init__(message)
 
