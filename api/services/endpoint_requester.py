@@ -77,4 +77,11 @@ class EndpointRequester:
         return await self._request(method=RequestMethod.GET, url=url, headers=headers, params=params, timeout=timeout)
 
     async def post(self, url: str, headers=None, data=None, json=None, timeout=None):
-        return await self._request(method=RequestMethod.POST, url=url, headers=headers, data=data, json=json, timeout=timeout)
+        return await self._request(
+            method=RequestMethod.POST,
+            url=url,
+            headers=headers,
+            data=data,
+            json=json,
+            timeout=timeout
+        )
