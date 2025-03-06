@@ -6,6 +6,10 @@ import pytest
 from api.services.endpoint_requester import EndpointRequester
 
 
+SUCCESS_RESPONSE = {"message": "success"}
+ERROR_RESPONSE = "Bad Request"
+
+
 @pytest.fixture
 def mock_httpx_client() -> AsyncMock:
     mock = AsyncMock(spec=httpx.AsyncClient)
@@ -20,7 +24,7 @@ def endpoint_requester(mock_httpx_client) -> EndpointRequester:
 
 @pytest.fixture
 def mock_response_success() -> MagicMock:
-    expected_data = {"message": "success"}
+    expected_data = SUCCESS_RESPONSE
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.status_code = 200
     mock_response.json.return_value = expected_data
@@ -42,13 +46,12 @@ def mock_response_failure() -> MagicMock:
 @pytest.mark.asyncio
 async def test_get_success(endpoint_requester, mock_httpx_client, mock_response_success):
     """Test GET request with 2XX status code response returns expected data"""
-
     mock_httpx_client.get.return_value = mock_response_success
     url = "http://test-url.com"
 
     data = await endpoint_requester.get(url)
 
-    assert data == {"message": "success"}
+    assert data == SUCCESS_RESPONSE
     mock_httpx_client.get.assert_called_once_with(url=url, headers=None, params=None, timeout=None)
 
 
@@ -58,8 +61,10 @@ async def test_get_failure(endpoint_requester, mock_httpx_client, mock_response_
     mock_httpx_client.get.return_value = mock_response_failure
     url = "http://test-url.com"
 
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(httpx.HTTPStatusError) as e:
         await endpoint_requester.get(url)
+
+    assert str(e.value) == ERROR_RESPONSE
 
 
 @pytest.mark.asyncio
@@ -70,7 +75,7 @@ async def test_post_success(endpoint_requester, mock_httpx_client, mock_response
 
     data = await endpoint_requester.post(url)
 
-    assert data == {"message": "success"}
+    assert data == SUCCESS_RESPONSE
     mock_httpx_client.post.assert_called_once_with(url=url, headers=None, data=None, json=None, timeout=None)
 
 
@@ -80,6 +85,7 @@ async def test_post_failure(endpoint_requester, mock_httpx_client, mock_response
     mock_httpx_client.post.return_value = mock_response_failure
     url = "http://test-url.com"
 
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(httpx.HTTPStatusError) as e:
         await endpoint_requester.post(url)
 
+    assert str(e.value) == ERROR_RESPONSE
