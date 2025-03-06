@@ -5,7 +5,7 @@ import pytest
 
 from api.services.endpoint_requester import EndpointRequester
 
-
+TEST_URL = "http://test-url.com"
 SUCCESS_RESPONSE = {"message": "success"}
 ERROR_RESPONSE = "Bad Request"
 
@@ -43,49 +43,44 @@ def mock_response_failure() -> MagicMock:
     return mock_response
 
 
+@pytest.mark.parametrize("method", ["get", "post"])
 @pytest.mark.asyncio
-async def test_get_success(endpoint_requester, mock_httpx_client, mock_response_success):
-    """Test GET request with 2XX status code response returns expected data"""
-    mock_httpx_client.get.return_value = mock_response_success
-    url = "http://test-url.com"
+async def test_success_response(endpoint_requester, mock_httpx_client, mock_response_success, method):
+    """Test GET and POST requests with 2XX status code responses return expected data"""
+    mock_method = getattr(mock_httpx_client, method)
+    mock_method.return_value = mock_response_success
 
-    data = await endpoint_requester.get(url)
+    method_to_test = getattr(endpoint_requester, method)
+    data = await method_to_test(TEST_URL)
 
     assert data == SUCCESS_RESPONSE
-    mock_httpx_client.get.assert_called_once_with(url=url, headers=None, params=None, timeout=None)
 
 
+@pytest.mark.parametrize("method, extras", [("get", {"params": None}), ("post", {"data": None, "json": None})])
 @pytest.mark.asyncio
-async def test_get_failure(endpoint_requester, mock_httpx_client, mock_response_failure):
-    """Test GET request with non-2XX status code response raises HTTPStatusError"""
-    mock_httpx_client.get.return_value = mock_response_failure
-    url = "http://test-url.com"
+async def test_client_interaction(endpoint_requester, mock_httpx_client, mock_response_success, method, extras):
+    """Test GET and POST requests only call client get/post method once"""
+    mock_method = getattr(mock_httpx_client, method)
+    mock_method.return_value = mock_response_success
+    method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(httpx.HTTPStatusError) as e:
-        await endpoint_requester.get(url)
+    await method_to_test(TEST_URL)
 
-    assert str(e.value) == ERROR_RESPONSE
+    mock_method.assert_called_once_with(url=TEST_URL, headers=None, timeout=None, **extras)
 
 
+@pytest.mark.parametrize("method", ["get", "post"])
 @pytest.mark.asyncio
-async def test_post_success(endpoint_requester, mock_httpx_client, mock_response_success):
-    """Test POST request with 2XX status code response returns expected data"""
-    mock_httpx_client.post.return_value = mock_response_success
-    url = "http://test-url.com"
+async def test_failure(endpoint_requester, mock_httpx_client, mock_response_failure, method):
+    """
+    Test GET and POST requests with non-2XX status code responses raise HTTPStatusError and do not call json method on
+    response
+    """
+    mock_method = getattr(mock_httpx_client, method)
+    mock_method.return_value = mock_response_failure
+    method_to_test = getattr(endpoint_requester, method)
 
-    data = await endpoint_requester.post(url)
+    with pytest.raises(httpx.HTTPStatusError, match=ERROR_RESPONSE):
+        await method_to_test(TEST_URL)
 
-    assert data == SUCCESS_RESPONSE
-    mock_httpx_client.post.assert_called_once_with(url=url, headers=None, data=None, json=None, timeout=None)
-
-
-@pytest.mark.asyncio
-async def test_post_failure(endpoint_requester, mock_httpx_client, mock_response_failure):
-    """Test POST request with non-2XX status code response raises HTTPStatusError"""
-    mock_httpx_client.post.return_value = mock_response_failure
-    url = "http://test-url.com"
-
-    with pytest.raises(httpx.HTTPStatusError) as e:
-        await endpoint_requester.post(url)
-
-    assert str(e.value) == ERROR_RESPONSE
+    mock_response_failure.json.assert_not_called()

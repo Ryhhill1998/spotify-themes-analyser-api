@@ -4,7 +4,7 @@ import urllib.parse
 from httpx import HTTPStatusError
 
 from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData, TrackArtist, TopItemResponse
-from api.services.endpoint_requester import EndpointRequester
+from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException
 from api.services.music.music_service import MusicService
 from api.services.music.spotify_auth_service import SpotifyAuthService
 
@@ -108,10 +108,7 @@ class SpotifyDataService(MusicService):
                 time_range=time_range.value,
                 limit=limit
             )
-        except HTTPStatusError as e:
-            if e.response.status_code != 401:
-                raise
-
+        except EndpointRequesterUnauthorisedException:
             tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
             top_items = await self._get_top_items(
                 access_token=tokens.access_token,
