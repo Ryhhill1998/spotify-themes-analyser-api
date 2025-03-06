@@ -5,8 +5,8 @@ from httpx import HTTPStatusError
 
 from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData, TrackArtist, TopItemResponse
 from api.services.endpoint_requester import EndpointRequester
-from api.services.spotify.spotify_auth_service import SpotifyAuthService
-from api.services.spotify.spotify_service import SpotifyService
+from api.services.music.music_service import MusicService
+from api.services.music.spotify_auth_service import SpotifyAuthService
 
 
 class TopItemType(Enum):
@@ -20,7 +20,7 @@ class TimeRange(Enum):
     LONG = "long_term"
 
 
-class SpotifyDataService(SpotifyService):
+class SpotifyDataService(MusicService):
     def __init__(
             self,
             client_id: str,
@@ -64,7 +64,7 @@ class SpotifyDataService(SpotifyService):
             id=data["id"],
             name=data["name"],
             images=data["images"],
-            spotify_url=data["external_urls"]["spotify"],
+            spotify_url=data["external_urls"]["music"],
             genres=data["genres"]
         )
 

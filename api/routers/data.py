@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
 from api.models import TokenData
-from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
+from api.services.music.spotify_data_service import SpotifyDataService, TopItemType
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/data")

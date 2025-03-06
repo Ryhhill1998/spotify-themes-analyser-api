@@ -1,7 +1,7 @@
 from api.models import TokenData, LyricsRequest, AnalysisRequest, EmotionalProfileResponse
 from api.services.analysis_service import AnalysisService
 from api.services.lyrics_service import LyricsService
-from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
+from api.services.music.spotify_data_service import SpotifyDataService, TopItemType
 
 
 class InsightsService:

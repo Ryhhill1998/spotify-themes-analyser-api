@@ -24,7 +24,7 @@ def validate_state(stored_state: str, received_state: str):
         raise ValueError("Received state does not match stored state.")
 
 
-@router.get("/spotify/login")
+@router.get("/music/login")
 async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     state = generate_state()
     url = spotify_auth_service.generate_auth_url(state)
@@ -35,7 +35,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     return response
 
 
-@router.get("/spotify/callback")
+@router.get("/music/callback")
 async def callback(
         code: str,
         state: str,
@@ -48,7 +48,7 @@ async def callback(
         # prevents csrf
         validate_state(stored_state=request.cookies["oauth_state"], received_state=state)
 
-        # get access and refresh tokens from spotify API to allow future API calls on behalf of the user
+        # get access and refresh tokens from music API to allow future API calls on behalf of the user
         tokens = await spotify_auth_service.create_tokens(code)
 
         response = create_custom_redirect_response(settings.frontend_url)

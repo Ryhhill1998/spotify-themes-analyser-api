@@ -3,10 +3,10 @@ import urllib.parse
 
 from api.models import TokenData
 from api.services.endpoint_requester import EndpointRequester
-from api.services.spotify.spotify_service import SpotifyService
+from api.services.music.music_service import MusicService
 
 
-class SpotifyAuthService(SpotifyService):
+class SpotifyAuthService(MusicService):
     def __init__(
             self,
             client_id: str,

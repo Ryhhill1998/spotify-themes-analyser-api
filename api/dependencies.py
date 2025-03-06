@@ -8,8 +8,8 @@ from api.services.analysis_service import AnalysisService
 from api.services.emotional_profile_service import InsightsService
 from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
-from api.services.spotify.spotify_auth_service import SpotifyAuthService
-from api.services.spotify.spotify_data_service import SpotifyDataService
+from api.services.music.spotify_auth_service import SpotifyAuthService
+from api.services.music.spotify_data_service import SpotifyDataService
 from api.settings import Settings
 
 
