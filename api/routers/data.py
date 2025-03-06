@@ -1,20 +1,13 @@
-from typing import Annotated
-
-from fastapi import Depends, APIRouter
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_insights_service
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, \
+    InsightsServiceDependency
 from api.models import TokenData
-from api.services.emotional_profile_service import InsightsService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/data")
-
-# initialise dependencies
-token_cookie_extraction_dependency = Annotated[TokenData, Depends(get_tokens_from_cookies)]
-spotify_data_service_dependency = Annotated[SpotifyDataService, Depends(get_spotify_data_service)]
-insights_service_dependency = Annotated[InsightsService, Depends(get_insights_service)]
 
 
 def create_json_response_and_set_token_cookies(content: list[dict] | dict, tokens: TokenData) -> JSONResponse:
@@ -43,8 +36,8 @@ async def get_item_response(
 @router.get("/tracks/{track_id}")
 async def get_track_by_id(
         track_id: str,
-        tokens: token_cookie_extraction_dependency,
-        spotify_data_service: spotify_data_service_dependency
+        tokens: TokenCookieExtractionDependency,
+        spotify_data_service: SpotifyDataServiceDependency
 ) -> JSONResponse:
     track_response = await get_item_response(
         item_id=track_id,
@@ -59,8 +52,8 @@ async def get_track_by_id(
 @router.get("/artists/{artist_id}")
 async def get_artist_by_id(
         artist_id: str,
-        tokens: token_cookie_extraction_dependency,
-        spotify_data_service: spotify_data_service_dependency
+        tokens: TokenCookieExtractionDependency,
+        spotify_data_service: SpotifyDataServiceDependency
 ) -> JSONResponse:
     artist_response = await get_item_response(
         item_id=artist_id,
@@ -91,8 +84,8 @@ async def get_top_items_response(
 
 @router.get("/top-artists")
 async def get_top_artists(
-        tokens: token_cookie_extraction_dependency,
-        spotify_data_service: spotify_data_service_dependency
+        tokens: TokenCookieExtractionDependency,
+        spotify_data_service: SpotifyDataServiceDependency
 ) -> JSONResponse:
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
@@ -105,8 +98,8 @@ async def get_top_artists(
 
 @router.get("/top-tracks")
 async def get_top_tracks(
-        tokens: token_cookie_extraction_dependency,
-        spotify_data_service: spotify_data_service_dependency
+        tokens: TokenCookieExtractionDependency,
+        spotify_data_service: SpotifyDataServiceDependency
 ) -> JSONResponse:
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
@@ -119,8 +112,8 @@ async def get_top_tracks(
 
 @router.get("/emotional-profile")
 async def get_emotional_profile(
-        tokens: token_cookie_extraction_dependency,
-        insights_service: insights_service_dependency,
+        tokens: TokenCookieExtractionDependency,
+        insights_service: InsightsServiceDependency,
 ) -> JSONResponse:
     emotional_profile = await insights_service.get_emotional_profile(tokens)
     top_emotions = emotional_profile.emotions

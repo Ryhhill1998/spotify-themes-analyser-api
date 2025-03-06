@@ -1,23 +1,14 @@
 import secrets
 import urllib.parse
-from typing import Annotated
 from requests.exceptions import HTTPError
 
-from fastapi import Response, Depends, Request
+from fastapi import Response, APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from api.dependencies import get_settings, get_spotify_auth_service
-from fastapi import APIRouter
-
-from api.services.spotify.spotify_auth_service import SpotifyAuthService
-from api.settings import Settings
+from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/auth")
-
-# initialise dependencies
-spotify_auth_service_dependency = Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]
-settings_dependency = Annotated[Settings, Depends(get_settings)]
 
 
 def create_custom_redirect_response(redirect_url: str) -> Response:
@@ -34,7 +25,7 @@ def validate_state(stored_state: str, received_state: str):
 
 
 @router.get("/spotify/login")
-async def login(spotify_auth_service: spotify_auth_service_dependency):
+async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     state = generate_state()
     url = spotify_auth_service.generate_auth_url(state)
 
@@ -49,8 +40,8 @@ async def callback(
         code: str,
         state: str,
         request: Request,
-        spotify_auth_service: spotify_auth_service_dependency,
-        settings: settings_dependency
+        spotify_auth_service: SpotifyAuthServiceDependency,
+        settings: SettingsDependency
 ):
     try:
         # make sure that state stored in login route is same as that received after authenticating
