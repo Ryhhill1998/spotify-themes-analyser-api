@@ -1,5 +1,6 @@
 import base64
 import urllib.parse
+from functools import cached_property
 
 from api.models import TokenData
 from api.services.endpoint_requester import EndpointRequester
@@ -24,9 +25,9 @@ class SpotifyAuthService(MusicService):
         )
         self.redirect_uri = redirect_uri
         self.auth_scope = auth_scope
-        self.auth_header = self._generate_auth_header()
 
-    def _generate_auth_header(self) -> str:
+    @cached_property
+    def auth_header(self) -> str:
         return base64.b64encode(f"{self.client_id}:{self.client_secret}".encode()).decode()
 
     def generate_auth_url(self, state: str) -> str:
