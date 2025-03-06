@@ -1,6 +1,10 @@
 from api.models import LyricsRequest, LyricsResponse
 from api.services.endpoint_requester import EndpointRequester
 
+class LyricsServiceException(Exception):
+    """Raised when LyricsService fails to process the API response."""
+    def __init__(self, message):
+        super().__init__(message)
 
 class LyricsService:
     def __init__(self, base_url: str, endpoint_requester: EndpointRequester):
@@ -12,10 +16,11 @@ class LyricsService:
 
         data = await self.endpoint_requester.post(
             url=url,
-            json=[item.model_dump() for item in lyrics_requests],
+            json_data=[item.model_dump() for item in lyrics_requests],
             timeout=None
         )
 
-        lyrics_list = [LyricsResponse(**entry) for entry in data]
-
-        return lyrics_list
+        try:
+            return [LyricsResponse(**entry) for entry in data]
+        except Exception as e:
+            raise LyricsServiceException(f"Failed to convert API response: {e}")

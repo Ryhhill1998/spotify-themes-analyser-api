@@ -58,7 +58,7 @@ class AnalysisService:
 
         data = await self.endpoint_requester.post(
             url=url,
-            json=[item.model_dump() for item in analysis_requests],
+            json_data=[item.model_dump() for item in analysis_requests],
             timeout=None
         )
 

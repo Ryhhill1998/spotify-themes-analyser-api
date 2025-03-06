@@ -6,12 +6,12 @@ from httpx import Response
 
 
 class EndpointRequesterException(Exception):
-    def __init__(self, message="Failed to make request"):
+    def __init__(self, message: str = "Failed to make request"):
         super().__init__(message)
 
 
 class EndpointRequesterUnauthorisedException(EndpointRequesterException):
-    def __init__(self, message="Unauthorized"):
+    def __init__(self, message: str = "Unauthorized"):
         super().__init__(message)
 
 
