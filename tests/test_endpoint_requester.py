@@ -1,3 +1,4 @@
+import json
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
@@ -76,55 +77,73 @@ async def test_client_interaction(endpoint_requester, mock_httpx_client, mock_re
 
 @pytest.mark.parametrize("method", ["get", "post"])
 @pytest.mark.asyncio
-async def test_failure(endpoint_requester, mock_httpx_client, mock_response_failure, method):
-    """
-    Test GET and POST requests with non-2XX status code responses raise EndpointRequesterException and do not call json
-    method on response
-    """
+async def test_http_status_error(endpoint_requester, mock_httpx_client, mock_response_failure, method):
+    """Test that HTTP status errors (except 401) raise EndpointRequesterException."""
+    mock_response_failure.status_code = 500
     mock_httpx_client.request.return_value = mock_response_failure
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterException):
-        await method_to_test(TEST_URL)
-
-    mock_response_failure.json.assert_not_called()
-
-
-@pytest.mark.parametrize("method", ["get", "post"])
-@pytest.mark.asyncio
-async def test_401_error_raises_custom_unauthorised_exception(endpoint_requester, mock_httpx_client, method):
-    """
-    Test GET and POST requests with 401 status code responses raise EndpointRequesterUnauthorisedException
-    """
-    mock_response = MagicMock(spec=httpx.Response)
-    mock_response.status_code = 401
-    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-        message="Unauthorized",
-        request=MagicMock(),
-        response=mock_response
-    )
-    mock_httpx_client.request.return_value = mock_response
-    method_to_test = getattr(endpoint_requester, method)
-
-    with pytest.raises(EndpointRequesterUnauthorisedException):
+    with pytest.raises(EndpointRequesterException, match="Failed to make request"):
         await method_to_test(TEST_URL)
 
 
 @pytest.mark.parametrize("method", ["get", "post"])
 @pytest.mark.asyncio
-async def test_401_error_raises_custom_unauthorised_exception(endpoint_requester, mock_httpx_client, method):
-    """
-    Test GET and POST requests with 401 status code responses raise EndpointRequesterUnauthorisedException
-    """
-    mock_response = MagicMock(spec=httpx.Response)
-    mock_response.status_code = 401
-    mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-        message="Unauthorized",
-        request=MagicMock(),
-        response=mock_response
-    )
-    mock_httpx_client.request.return_value = mock_response
+async def test_unauthorized_error(endpoint_requester, mock_httpx_client, mock_response_failure, method):
+    """Test that a 401 response raises EndpointRequesterUnauthorisedException."""
+    mock_response_failure.status_code = 401
+    mock_httpx_client.request.return_value = mock_response_failure
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterUnauthorisedException):
+    with pytest.raises(EndpointRequesterUnauthorisedException, match="Unauthorized"):
+        await method_to_test(TEST_URL)
+
+@pytest.mark.parametrize("method", ["get", "post"])
+@pytest.mark.asyncio
+async def test_json_decode_error(endpoint_requester, mock_httpx_client, mock_response_success, method):
+    """Test that invalid JSON in the response raises EndpointRequesterException."""
+    mock_httpx_client.request.return_value = mock_response_success
+    mock_response_success.raise_for_status.return_value = None
+    mock_response_success.json.side_effect = json.JSONDecodeError("Expecting value", "doc", 0)
+    mock_httpx_client.request.return_value = mock_response_success
+
+    method_to_test = getattr(endpoint_requester, method)
+
+    with pytest.raises(EndpointRequesterException, match="Response not valid JSON."):
+        await method_to_test(TEST_URL)
+
+
+@pytest.mark.parametrize("method", ["get", "post"])
+@pytest.mark.asyncio
+async def test_timeout_error(endpoint_requester, mock_httpx_client, method):
+    """Test that a request timeout raises EndpointRequesterException."""
+    mock_httpx_client.request.side_effect = httpx.TimeoutException("Request timed out")
+
+    method_to_test = getattr(endpoint_requester, method)
+
+    with pytest.raises(EndpointRequesterException, match="Request timed out."):
+        await method_to_test(TEST_URL)
+
+
+@pytest.mark.parametrize("method", ["get", "post"])
+@pytest.mark.asyncio
+async def test_request_error(endpoint_requester, mock_httpx_client, method):
+    """Test that a generic request error raises EndpointRequesterException."""
+    mock_httpx_client.request.side_effect = httpx.RequestError("Request failed")
+
+    method_to_test = getattr(endpoint_requester, method)
+
+    with pytest.raises(EndpointRequesterException, match="Request failed: Request failed"):
+        await method_to_test(TEST_URL)
+
+
+@pytest.mark.parametrize("method", ["get", "post"])
+@pytest.mark.asyncio
+async def test_invalid_url_error(endpoint_requester, mock_httpx_client, method):
+    """Test that an invalid URL raises EndpointRequesterException."""
+    mock_httpx_client.request.side_effect = httpx.InvalidURL("Invalid URL provided")
+
+    method_to_test = getattr(endpoint_requester, method)
+
+    with pytest.raises(EndpointRequesterException, match="Invalid URL provided."):
         await method_to_test(TEST_URL)
