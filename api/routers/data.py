@@ -3,13 +3,9 @@ from typing import Annotated
 from fastapi import Depends, APIRouter
 from fastapi.responses import JSONResponse
 
-from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_spotify_auth_service, \
-    get_lyrics_service, get_analysis_service, get_insights_service
-from api.models import LyricsRequest, LyricsResponse, TokenData
-from api.services.analysis_service import AnalysisService
+from api.dependencies import get_tokens_from_cookies, get_spotify_data_service, get_insights_service
+from api.models import TokenData
 from api.services.emotional_profile_service import InsightsService
-from api.services.lyrics_service import LyricsService
-from api.services.spotify.spotify_auth_service import SpotifyAuthService
 from api.services.spotify.spotify_data_service import SpotifyDataService, TopItemType
 from api.utils import set_response_cookie
 
@@ -17,10 +13,7 @@ router = APIRouter(prefix="/data")
 
 # initialise dependencies
 token_cookie_extraction_dependency = Annotated[TokenData, Depends(get_tokens_from_cookies)]
-spotify_auth_service_dependency = Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]
 spotify_data_service_dependency = Annotated[SpotifyDataService, Depends(get_spotify_data_service)]
-lyrics_service_dependency = Annotated[LyricsService, Depends(get_lyrics_service)]
-analysis_service_dependency = Annotated[AnalysisService, Depends(get_analysis_service)]
 insights_service_dependency = Annotated[InsightsService, Depends(get_insights_service)]
 
 
@@ -122,16 +115,6 @@ async def get_top_tracks(
     )
 
     return response
-
-
-@router.post("/lyrics-list")
-async def retrieve_lyrics_list(
-        lyrics_requests: list[LyricsRequest],
-        lyrics_service: lyrics_service_dependency
-) -> list[LyricsResponse]:
-    lyrics_list = await lyrics_service.get_lyrics_list(lyrics_requests)
-
-    return lyrics_list
 
 
 @router.get("/emotional-profile")

@@ -99,7 +99,7 @@ class SpotifyDataService(SpotifyService):
             tokens: TokenData,
             item_type: TopItemType,
             time_range: TimeRange = TimeRange.MEDIUM,
-            limit: int = 3
+            limit: int = 20
     ) -> TopItemsResponse:
         try:
             top_items = await self._get_top_items(
@@ -135,13 +135,13 @@ class SpotifyDataService(SpotifyService):
 
     async def get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItemResponse:
         try:
-            item = self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
+            item = await self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
         except HTTPStatusError as e:
             if e.response.status_code != 401:
                 raise
 
             tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
-            item = self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
+            item = await self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
 
         item_response = TopItemResponse(data=item, tokens=tokens)
 
