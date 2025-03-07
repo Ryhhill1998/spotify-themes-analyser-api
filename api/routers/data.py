@@ -114,7 +114,7 @@ async def get_emotional_profile(
         tokens: TokenCookieExtractionDependency,
         insights_service: InsightsServiceDependency,
 ) -> JSONResponse:
-    emotional_profile = await insights_service.get_emotional_profile(tokens)
+    emotional_profile = await insights_service.get_top_emotions(tokens)
     top_emotions = emotional_profile.emotions
     tokens = emotional_profile.tokens
 
