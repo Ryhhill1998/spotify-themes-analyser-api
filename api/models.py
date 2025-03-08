@@ -81,7 +81,7 @@ class EmotionalAnalysis(BaseModel):
 
 
 class EmotionalProfile(AnalysisRequest):
-    emotional_profile: EmotionalAnalysis
+    emotional_analysis: EmotionalAnalysis
 
 
 class TopEmotion(BaseModel):

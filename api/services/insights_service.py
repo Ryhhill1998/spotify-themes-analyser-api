@@ -19,15 +19,6 @@ class InsightsService:
 
     @staticmethod
     def _aggregate_emotions(emotional_profiles: list[EmotionalProfile]):
-        """
-        Aggregates emotional scores from multiple tracks.
-
-        Args:
-            emotional_profiles (list[EmotionalProfile]): List of emotional profiles for tracks.
-
-        Returns:
-            dict: Aggregated emotion data, including total scores and max-percentage track for each emotion.
-        """
         total_emotions = defaultdict(
             lambda: {
                 "total": 0,
@@ -36,7 +27,7 @@ class InsightsService:
         )
 
         for profile in emotional_profiles:
-            for emotion, percentage in profile.emotional_profile.model_dump().items():
+            for emotion, percentage in profile.emotional_analysis.model_dump().items():
                 total_emotions[emotion]["total"] += percentage
 
                 if percentage > total_emotions[emotion]["max_track"]["percentage"]:
@@ -46,16 +37,6 @@ class InsightsService:
 
     @staticmethod
     def _get_average_emotions(total_emotions: dict, result_count: int) -> list[TopEmotion]:
-        """
-        Calculates the average percentage for each emotion.
-
-        Args:
-            total_emotions (dict): Aggregated emotion data.
-            result_count (int): Number of tracks analyzed.
-
-        Returns:
-            list[TopEmotion]: List of emotions with average percentage.
-        """
         return [
             TopEmotion(
                 name=emotion,
@@ -67,19 +48,6 @@ class InsightsService:
         ]
 
     async def _get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
-        """
-        Fetches emotional profiles for a list of tracks and returns the top emotions.
-
-        Args:
-            analysis_requests (list[AnalysisRequest]): List of analysis requests.
-            limit (int, optional): Number of top emotions to return. Defaults to 5.
-
-        Returns:
-            list[TopEmotion]: List of top emotions.
-
-        Raises:
-            AnalysisServiceException: If response parsing fails.
-        """
         emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
         total_emotions = self._aggregate_emotions(emotional_profiles)
         average_emotions = self._get_average_emotions(total_emotions=total_emotions, result_count=len(emotional_profiles))

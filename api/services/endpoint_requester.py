@@ -155,9 +155,8 @@ class EndpointRequester:
         """
         Sends an HTTP request asynchronously and handles errors.
 
-        This method sends an HTTP request using the specified method, URL, and optional parameters.
-        It handles various exceptions, including timeout errors, invalid responses,
-        and HTTP status errors.
+        This method sends an HTTP request using the specified method, URL and optional parameters.
+        It handles various exceptions, including timeout errors, invalid responses and HTTP status errors.
 
         Parameters
         ----------
@@ -215,7 +214,12 @@ class EndpointRequester:
             print(f"Invalid URL: {e}")
             raise EndpointRequesterException("Invalid URL provided.")
 
-    async def get(self, url: str, headers=None, params=None, timeout=None):
+    async def get(
+            self, url: str,
+            headers: dict[str, str] | None = None,
+            params: dict[str, str] | None = None,
+            timeout: float | None = None
+    ):
         """
         Sends an asynchronous GET request.
 
@@ -245,7 +249,14 @@ class EndpointRequester:
 
         return await self._request(method=RequestMethod.GET, url=url, headers=headers, params=params, timeout=timeout)
 
-    async def post(self, url: str, headers=None, data=None, json_data=None, timeout=None):
+    async def post(
+            self,
+            url: str,
+            headers: dict[str, str] = None,
+            data: dict[str, Any] = None,
+            json_data: Any | None = None,
+            timeout: float | None = None
+    ):
         """
         Sends an asynchronous POST request.
 
