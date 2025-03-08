@@ -18,6 +18,20 @@ class AnalysisServiceException(Exception):
         super().__init__(message)
 
 
+class AnalysisServiceNotFoundException(AnalysisServiceException):
+    """
+    Exception raised when AnalysisService fails to return results for the request.
+
+    Parameters
+    ----------
+    message : str
+        The error message describing the request for which no results were found.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class AnalysisService:
     """
     A service for retrieving emotional profile analyses of track lyrics from an external API.
@@ -72,6 +86,8 @@ class AnalysisService:
 
         Raises
         ------
+        AnalysisServiceNotFoundException
+            If the API returns an empty list.
         AnalysisServiceException
             If the API response cannot be converted into `EmotionalProfile` objects.
         """
@@ -85,7 +101,7 @@ class AnalysisService:
         )
 
         if len(data) == 0:
-            raise AnalysisServiceException(f"No emotional profiles found for request: {analysis_requests}")
+            raise AnalysisServiceNotFoundException(f"No emotional profiles found for request: {analysis_requests}")
 
         try:
             return [EmotionalProfile(**entry) for entry in data]

@@ -3,6 +3,7 @@ import pydantic
 from api.models import LyricsRequest, LyricsResponse
 from api.services.endpoint_requester import EndpointRequester
 
+
 class LyricsServiceException(Exception):
     """
     Exception raised when LyricsService fails to process the API response.
@@ -15,6 +16,21 @@ class LyricsServiceException(Exception):
 
     def __init__(self, message):
         super().__init__(message)
+
+
+class LyricsServiceNotFoundException(LyricsServiceException):
+    """
+    Exception raised when LyricsService fails to return results for the request.
+
+    Parameters
+    ----------
+    message : str
+        The error message describing the request for which no results were found.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+
 
 class LyricsService:
     """
@@ -71,6 +87,8 @@ class LyricsService:
 
         Raises
         ------
+        LyricsServiceNotFoundException
+            If the API returns an empty list.
         LyricsServiceException
             If the API response cannot be converted into `LyricsResponse` objects.
         """
@@ -84,7 +102,7 @@ class LyricsService:
         )
 
         if len(data) == 0:
-            raise LyricsServiceException(f"No lyrics found for request: {lyrics_requests}")
+            raise LyricsServiceNotFoundException(f"No lyrics found for request: {lyrics_requests}")
 
         try:
             return [LyricsResponse(**entry) for entry in data]

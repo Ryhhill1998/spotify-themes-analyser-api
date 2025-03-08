@@ -84,4 +84,4 @@ async def test_get_lyrics_list_empty_response(lyrics_service, endpoint_requester
     endpoint_requester.post.return_value = []
 
     with pytest.raises(LyricsServiceException, match="No lyrics found for request"):
-        lyrics_list = await lyrics_service.get_lyrics_list(mock_lyrics_requests)
+        await lyrics_service.get_lyrics_list(mock_lyrics_requests)
