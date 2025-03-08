@@ -83,6 +83,9 @@ class LyricsService:
             timeout=None
         )
 
+        if len(data) == 0:
+            raise LyricsServiceException(f"No lyrics found for request: {lyrics_requests}")
+
         try:
             return [LyricsResponse(**entry) for entry in data]
         except pydantic.ValidationError as e:

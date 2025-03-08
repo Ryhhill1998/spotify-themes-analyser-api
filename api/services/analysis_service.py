@@ -1,3 +1,5 @@
+import pydantic
+
 from api.models import AnalysisRequest, EmotionalProfile
 from api.services.endpoint_requester import EndpointRequester
 
@@ -82,7 +84,10 @@ class AnalysisService:
             timeout=None
         )
 
+        if len(data) == 0:
+            raise AnalysisServiceException(f"No emotional profiles found for request: {analysis_requests}")
+
         try:
             return [EmotionalProfile(**entry) for entry in data]
-        except Exception as e:
-            raise AnalysisServiceException(f"Failed to process API response: {e}")
+        except pydantic.ValidationError as e:
+            raise AnalysisServiceException(f"Failed to convert API response to EmotionalProfile object: {e}")

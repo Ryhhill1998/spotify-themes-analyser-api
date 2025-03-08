@@ -78,12 +78,10 @@ async def test_get_lyrics_list_invalid_response(
 
 @pytest.mark.asyncio
 async def test_get_lyrics_list_empty_response(lyrics_service, endpoint_requester, mock_lyrics_requests):
-    """Test that an empty API response returns an empty list."""
+    """Test that an empty API response raises a LyricsServiceException."""
 
     # API returns empty list
     endpoint_requester.post.return_value = []
 
-    lyrics_list = await lyrics_service.get_lyrics_list(mock_lyrics_requests)
-
-    # Should return an empty list, not raise an exception
-    assert lyrics_list == []
+    with pytest.raises(LyricsServiceException, match="No lyrics found for request"):
+        lyrics_list = await lyrics_service.get_lyrics_list(mock_lyrics_requests)

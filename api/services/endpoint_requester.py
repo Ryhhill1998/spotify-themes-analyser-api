@@ -7,10 +7,10 @@ from httpx import Response
 
 class EndpointRequesterException(Exception):
     """
-    Raised when an HTTP request fails for any reason other than a 401 status code.
+    Raised when an HTTP request fails for any reason other than a 401 or 404 status code.
 
     This exception is triggered when an HTTP request made using `httpx` results in
-    an error that is not a 401 Unauthorized status code.
+    an error that is not a 401 Unauthorized or 404 Not Found status code.
 
     Parameters
     ----------
@@ -24,18 +24,35 @@ class EndpointRequesterException(Exception):
 
 class EndpointRequesterUnauthorisedException(EndpointRequesterException):
     """
-    Raised when an HTTP request fails with a 401 Unauthorized status code.
+    Raised when an HTTP request fails with a 401 Unauthorised status code.
 
-    This exception is a subclass of `EndpointRequesterException` and is
-    specifically used when the response status code is 401.
+    This exception is a subclass of `EndpointRequesterException` and is specifically used when the response status code
+    is 401.
 
     Parameters
     ----------
     message : str, optional
-        The error message describing the unauthorized request. Default is "Unauthorized".
+        The error message describing the unauthorised request. Default is "Unauthorised".
     """
 
-    def __init__(self, message: str = "Unauthorized"):
+    def __init__(self, message: str = "Unauthorised"):
+        super().__init__(message)
+
+
+class EndpointRequesterNotFoundException(EndpointRequesterException):
+    """
+    Raised when an HTTP request fails with a 404 Not found status code.
+
+    This exception is a subclass of `EndpointRequesterException` and is specifically used when the response status code
+    is 404.
+
+    Parameters
+    ----------
+    message : str, optional
+        The error message describing the not found request. Default is "Resource not found".
+    """
+
+    def __init__(self, message: str = "Resource not found"):
         super().__init__(message)
 
 
@@ -131,6 +148,8 @@ class EndpointRequester:
         ------
         EndpointRequesterUnauthorisedException
             If the response status code is 401 Unauthorized.
+        EndpointRequesterNotFoundException
+            If the response status code is 404 Not Found.
         EndpointRequesterException
             For all other non-2XX status codes.
         """
@@ -138,9 +157,12 @@ class EndpointRequester:
         if e.response.status_code == 401:
             print(f"Unauthorized request: {e}")
             raise EndpointRequesterUnauthorisedException()
-
-        print("Request failed.")
-        raise EndpointRequesterException()
+        elif e.response.status_code == 404:
+            print(f"Resource not found: {e}")
+            raise EndpointRequesterNotFoundException()
+        else:
+            print("Request failed.")
+            raise EndpointRequesterException()
 
     async def _request(
             self,

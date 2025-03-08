@@ -89,13 +89,13 @@ async def test_http_status_error(endpoint_requester, mock_httpx_client, mock_res
 
 @pytest.mark.parametrize("method", ["get", "post"])
 @pytest.mark.asyncio
-async def test_unauthorized_error(endpoint_requester, mock_httpx_client, mock_response_failure, method):
+async def test_unauthorised_error(endpoint_requester, mock_httpx_client, mock_response_failure, method):
     """Test that a 401 response raises EndpointRequesterUnauthorisedException."""
     mock_response_failure.status_code = 401
     mock_httpx_client.request.return_value = mock_response_failure
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterUnauthorisedException, match="Unauthorized"):
+    with pytest.raises(EndpointRequesterUnauthorisedException, match="Unauthorised"):
         await method_to_test(TEST_URL)
 
 @pytest.mark.parametrize("method", ["get", "post"])
