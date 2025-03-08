@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from api.models import TokenData, LyricsRequest, AnalysisRequest, EmotionalProfileResponse, Emotion, EmotionalProfile
+from api.models import TokenData, LyricsRequest, AnalysisRequest, TopEmotionsResponse, TopEmotion, EmotionalProfile
 from api.services.analysis_service import AnalysisService
 from api.services.lyrics_service import LyricsService
 from api.services.music.spotify_data_service import SpotifyDataService, TopItemType
@@ -45,7 +45,7 @@ class InsightsService:
         return total_emotions
 
     @staticmethod
-    def _get_average_emotions(total_emotions: dict, result_count: int) -> list[Emotion]:
+    def _get_average_emotions(total_emotions: dict, result_count: int) -> list[TopEmotion]:
         """
         Calculates the average percentage for each emotion.
 
@@ -54,10 +54,10 @@ class InsightsService:
             result_count (int): Number of tracks analyzed.
 
         Returns:
-            list[Emotion]: List of emotions with average percentage.
+            list[TopEmotion]: List of emotions with average percentage.
         """
         return [
-            Emotion(
+            TopEmotion(
                 name=emotion,
                 percentage=round(info["total"] / result_count, 2),
                 track_id=info["max_track"]["track_id"]
@@ -75,7 +75,7 @@ class InsightsService:
             limit (int, optional): Number of top emotions to return. Defaults to 5.
 
         Returns:
-            list[Emotion]: List of top emotions.
+            list[TopEmotion]: List of top emotions.
 
         Raises:
             AnalysisServiceException: If response parsing fails.
@@ -87,14 +87,14 @@ class InsightsService:
 
         return top_emotions
 
-    async def get_top_emotions(self, tokens: TokenData, limit: int = 5) -> EmotionalProfileResponse:
+    async def get_top_emotions(self, tokens: TokenData, limit: int = 5) -> TopEmotionsResponse:
         # get top tracks and refreshed tokens (if expired)
         # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
         top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
         data = top_tracks_response.data
         tokens = top_tracks_response.tokens
 
-        # get lyrics each track
+        # get lyrics for each track
         lyrics_requests = [
             LyricsRequest(
                 track_id=entry.id,
@@ -111,6 +111,6 @@ class InsightsService:
         top_emotions = await self._get_top_emotions(analysis_requests, limit=limit)
 
         # convert top emotions and tokens to emotional profile response object
-        emotional_profile_response = EmotionalProfileResponse(emotions=top_emotions, tokens=tokens)
+        emotional_profile_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
 
         return emotional_profile_response

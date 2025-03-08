@@ -109,14 +109,14 @@ async def get_top_tracks(
     return response
 
 
-@router.get("/emotional-profile")
-async def get_emotional_profile(
+@router.get("/top-emotions")
+async def get_top_emotions(
         tokens: TokenCookieExtractionDependency,
         insights_service: InsightsServiceDependency,
 ) -> JSONResponse:
-    emotional_profile = await insights_service.get_top_emotions(tokens)
-    top_emotions = emotional_profile.emotions
-    tokens = emotional_profile.tokens
+    top_emotions_response = await insights_service.get_top_emotions(tokens)
+    top_emotions = top_emotions_response.top_emotions
+    tokens = top_emotions_response.tokens
 
     response_content = [emotion.model_dump() for emotion in top_emotions]
     response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)

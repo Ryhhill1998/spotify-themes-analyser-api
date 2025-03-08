@@ -84,13 +84,13 @@ class EmotionalProfile(AnalysisRequest):
     emotional_profile: EmotionalAnalysis
 
 
-class Emotion(BaseModel):
+class TopEmotion(BaseModel):
     name: str
     percentage: EmotionPercentage
     track_id: str
 
 
-class EmotionalProfileResponse(BaseModel):
-    emotions: list[Emotion]
+class TopEmotionsResponse(BaseModel):
+    top_emotions: list[TopEmotion]
     tokens: TokenData
 

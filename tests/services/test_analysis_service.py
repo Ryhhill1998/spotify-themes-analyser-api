@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock
 import pytest
-from api.models import AnalysisRequest, Emotion
+from api.models import AnalysisRequest, TopEmotion
 from api.services.endpoint_requester import EndpointRequester
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 
