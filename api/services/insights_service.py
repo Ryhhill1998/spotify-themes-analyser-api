@@ -221,7 +221,7 @@ class InsightsService:
             emotional_profile_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
         except pydantic.ValidationError as e:
             raise InsightsServiceException(
-                f"Failed to convert top_emotions to TopEmotionsResponse: {e}"
+                f"Failed to convert top_emotions and tokens to TopEmotionsResponse: {e}"
             )
 
         return emotional_profile_response

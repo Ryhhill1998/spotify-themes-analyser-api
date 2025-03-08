@@ -39,17 +39,41 @@ class SpotifyDataServiceNotFoundException(SpotifyDataServiceException):
 
 
 class TopItemType(Enum):
+    """
+    Enum representing the types of top items that can be retrieved from Spotify.
+    """
+
     ARTISTS = "artists"
     TRACKS = "tracks"
 
 
 class TimeRange(Enum):
+    """
+    Enum representing the time range options for retrieving top items.
+    """
+
     SHORT = "short_term"
     MEDIUM = "medium_term"
     LONG = "long_term"
 
 
 class SpotifyDataService(MusicService):
+    """
+    Service responsible for interacting with Spotify's API to fetch user-related music data.
+
+    This class provides methods to retrieve a user's top tracks and artists, as well as fetching
+    specific items by their Spotify ID.
+
+    Inherits from
+    -------------
+    MusicService, which provides core attributes such as client_id, client_secret, base_url and endpoint_requester.
+
+    Attributes
+    ----------
+    spotify_auth_service : SpotifyAuthService
+        The authentication service used for handling token management.
+    """
+
     def __init__(
             self,
             client_id: str,
@@ -58,6 +82,21 @@ class SpotifyDataService(MusicService):
             endpoint_requester: EndpointRequester,
             spotify_auth_service: SpotifyAuthService
     ):
+        """
+        Parameters
+        ----------
+        client_id : str
+            The Spotify API client ID.
+        client_secret : str
+            The Spotify API client secret.
+        base_url : str
+            The base URL of the Spotify Web API.
+        endpoint_requester : EndpointRequester
+            The service responsible for making API requests.
+        spotify_auth_service : SpotifyAuthService
+            The authentication service used for handling token management.
+        """
+
         super().__init__(
             client_id=client_id,
             client_secret=client_secret,
@@ -68,6 +107,25 @@ class SpotifyDataService(MusicService):
 
     @staticmethod
     def _create_top_track_object(data: dict) -> TopTrack:
+        """
+        Creates a TopTrack object from Spotify API data.
+
+        Parameters
+        ----------
+        data : dict
+            The track data received from Spotify's API.
+
+        Returns
+        -------
+        TopTrack
+            A validated TopTrack object.
+
+        Raises
+        -------
+        KeyError
+            If a required key is not present within data.
+        """
+
         album = data["album"]
         artist = data["artists"][0]
 
@@ -89,6 +147,25 @@ class SpotifyDataService(MusicService):
 
     @staticmethod
     def _create_top_artist_object(data: dict) -> TopArtist:
+        """
+        Creates a TopArtist object from Spotify API data.
+
+        Parameters
+        ----------
+        data : dict
+            The artist data received from Spotify's API.
+
+        Returns
+        -------
+        TopArtist
+            A validated TopArtist object.
+
+        Raises
+        -------
+        KeyError
+            If a required key is not present within data.
+        """
+
         top_artist = TopArtist(
             id=data["id"],
             name=data["name"],
@@ -100,6 +177,27 @@ class SpotifyDataService(MusicService):
         return top_artist
 
     def _create_top_item_object(self, data: dict, item_type: TopItemType) -> TopItem:
+        """
+        Creates a TopItem object based on the specified item type.
+
+        Parameters
+        ----------
+        data : dict
+            The item data received from Spotify's API.
+        item_type : TopItemType
+            The type of item to create (TRACKS or ARTISTS).
+
+        Returns
+        -------
+        TopItem
+            A validated TopItem object.
+
+        Raises
+        ------
+        SpotifyDataServiceException
+            If a required field is missing or if the item type is invalid.
+        """
+
         try:
             if item_type == TopItemType.TRACKS:
                 return self._create_top_track_object(data=data)
@@ -125,6 +223,37 @@ class SpotifyDataService(MusicService):
             time_range: str,
             limit: int
     ) -> list[TopItem]:
+        """
+        Fetches a user's top items from Spotify.
+
+        Parameters
+        ----------
+        access_token : str
+            The user's Spotify access token.
+        item_type : TopItemType
+            The type of items to retrieve (TRACKS or ARTISTS).
+        time_range : str
+            The time range for retrieving top items.
+        limit : int
+            The number of top items to retrieve.
+
+        Returns
+        -------
+        list[TopItem]
+            A list of the user's top items.
+
+        Raises
+        -------
+        EndpointRequesterUnauthorisedException
+            If the request to the Spotify API fails due to a 401 Unauthorised status code.
+        EndpointRequesterNotFoundException
+            If the request to the Spotify API fails due to a 404 Not Found status code.
+        EndpointRequesterException
+            If there is an error while making the request to the Spotify API.
+        SpotifyDataServiceException
+            If the API response data is missing expected fields or fails validation.
+        """
+
         params = {"time_range": time_range, "limit": limit}
         url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
 
@@ -141,6 +270,37 @@ class SpotifyDataService(MusicService):
             time_range: TimeRange = TimeRange.MEDIUM,
             limit: int = 20
     ) -> TopItemsResponse:
+        """
+        Retrieves the top items (tracks or artists) for a user.
+
+        Parameters
+        ----------
+        tokens : TokenData
+            The user's access and refresh tokens.
+        item_type : TopItemType
+            The type of items to retrieve (TRACKS or ARTISTS).
+        time_range : TimeRange, optional
+            The time range for retrieving top items, default is MEDIUM.
+        limit : int, optional
+            The number of top items to retrieve, default is 20.
+
+        Returns
+        -------
+        TopItemsResponse
+            A response containing the user's top items and updated tokens.
+
+        Raises
+        ------
+        EndpointRequesterUnauthorisedException
+            If the request to the Spotify API fails due to a 401 Unauthorised status code.
+        EndpointRequesterException
+            If there is an error while making the request to the Spotify API.
+        SpotifyDataServiceNotFoundException
+            If no top items are found.
+        SpotifyDataServiceException
+            If the API response data is missing expected fields or fails validation.
+        """
+
         try:
             top_items = await self._get_top_items(
                 access_token=tokens.access_token,
@@ -165,6 +325,35 @@ class SpotifyDataService(MusicService):
         return top_items_response
 
     async def _get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItem:
+        """
+        Fetches a specific item (track or artist) from the Spotify API using its unique identifier.
+
+        Parameters
+        ----------
+        item_id : str
+            The unique identifier of the item (track or artist) to retrieve.
+        tokens : TokenData
+            The user's authentication tokens required for making the API request.
+        item_type : TopItemType
+            The type of the item being requested (e.g., TRACKS or ARTISTS).
+
+        Returns
+        -------
+        TopItem
+            An object representing the retrieved track or artist.
+
+        Raises
+        ------
+        EndpointRequesterUnauthorisedException
+            If the request to the Spotify API fails due to a 401 Unauthorised status code.
+        EndpointRequesterNotFoundException
+            If the request to the Spotify API fails due to a 404 Not Found status code.
+        EndpointRequesterException
+            If there is an error while making the request to the Spotify API.
+        SpotifyDataServiceException
+            If the response data is missing expected fields or fails validation.
+        """
+
         url = f"{self.base_url}/{item_type.value}/{item_id}"
 
         data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
@@ -174,6 +363,37 @@ class SpotifyDataService(MusicService):
         return item
 
     async def get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItemResponse:
+        """
+        Retrieves a specific track or artist by its unique identifier, handling authentication and errors.
+
+        If the request fails due to an expired or invalid token, it attempts to refresh the token and retry.
+
+        Parameters
+        ----------
+        item_id : str
+            The unique identifier of the item (track or artist) to retrieve.
+        tokens : TokenData
+            The user's authentication tokens required for making the API request.
+        item_type : TopItemType
+            The type of the item being requested (e.g., TRACKS or ARTISTS).
+
+        Returns
+        -------
+        TopItemResponse
+            A response object containing the retrieved item along with updated authentication tokens.
+
+        Raises
+        ------
+        EndpointRequesterUnauthorisedException
+            If the request to the Spotify API fails twice due to a 401 Unauthorised status code.
+        EndpointRequesterException
+            If there is an error while making the request to the Spotify API.
+        SpotifyDataServiceNotFoundException
+            If the requested item does not exist.
+        SpotifyDataServiceException
+            If the response data is missing expected fields or fails validation.
+        """
+
         try:
             item = await self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
         except EndpointRequesterUnauthorisedException:
