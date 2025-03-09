@@ -27,8 +27,8 @@ class SpotifyAuthService(MusicService):
     """
     Service responsible for handling authentication and token management for Spotify's API.
 
-    This class provides methods for generating authorization URLs, obtaining access tokens,
-    and refreshing expired tokens.
+    This class provides methods for generating authorization URLs, obtaining access tokens and refreshing expired
+    tokens.
 
     Inherits from
     -------------
@@ -80,7 +80,8 @@ class SpotifyAuthService(MusicService):
     @cached_property
     def auth_header(self) -> str:
         """
-        Generates the base64-encoded authorization header required for authentication requests.
+        Generates the base64-encoded authorization header required for authentication requests and caches it so it is
+        only computed once.
 
         Returns
         -------
@@ -136,7 +137,7 @@ class SpotifyAuthService(MusicService):
         Raises
         ------
         SpotifyAuthServiceException
-            If the request fails or token validation fails.
+            If the request or token validation fails.
         """
 
         try:
