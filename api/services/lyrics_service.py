@@ -1,7 +1,7 @@
 import pydantic
 
 from api.models import LyricsRequest, LyricsResponse
-from api.services.endpoint_requester import EndpointRequester
+from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 
 
 class LyricsServiceException(Exception):
@@ -90,21 +90,23 @@ class LyricsService:
         LyricsServiceNotFoundException
             If the API returns an empty list.
         LyricsServiceException
-            If the API response cannot be converted into `LyricsResponse` objects.
+            If the request to the Lyrics API fails or the response fails validation.
         """
-        
-        url = f"{self.base_url}/lyrics-list"
-
-        data = await self.endpoint_requester.post(
-            url=url,
-            json_data=[item.model_dump() for item in lyrics_requests],
-            timeout=None
-        )
-
-        if len(data) == 0:
-            raise LyricsServiceNotFoundException(f"No lyrics found for request: {lyrics_requests}")
 
         try:
+            url = f"{self.base_url}/lyrics-list"
+
+            data = await self.endpoint_requester.post(
+                url=url,
+                json_data=[item.model_dump() for item in lyrics_requests],
+                timeout=None
+            )
+
+            if len(data) == 0:
+                raise LyricsServiceNotFoundException(f"No lyrics found for request: {lyrics_requests}")
+
             return [LyricsResponse(**entry) for entry in data]
         except pydantic.ValidationError as e:
             raise LyricsServiceException(f"Failed to convert API response to LyricsResponse object: {e}")
+        except EndpointRequesterException as e:
+            raise LyricsServiceException(f"Request to Lyrics API failed - {e}")

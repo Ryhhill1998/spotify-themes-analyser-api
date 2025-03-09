@@ -1,7 +1,7 @@
 import pydantic
 
 from api.models import AnalysisRequest, EmotionalProfile
-from api.services.endpoint_requester import EndpointRequester
+from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 
 
 class AnalysisServiceException(Exception):
@@ -89,21 +89,23 @@ class AnalysisService:
         AnalysisServiceNotFoundException
             If the API returns an empty list.
         AnalysisServiceException
-            If the API response cannot be converted into `EmotionalProfile` objects.
+            If the request to the analysis API fails or the response fails validation.
         """
-        
-        url = f"{self.base_url}/emotional-profile"
-
-        data = await self.endpoint_requester.post(
-            url=url,
-            json_data=[item.model_dump() for item in analysis_requests],
-            timeout=None
-        )
-
-        if len(data) == 0:
-            raise AnalysisServiceNotFoundException(f"No emotional profiles found for request: {analysis_requests}")
 
         try:
+            url = f"{self.base_url}/emotional-profile"
+
+            data = await self.endpoint_requester.post(
+                url=url,
+                json_data=[item.model_dump() for item in analysis_requests],
+                timeout=None
+            )
+
+            if len(data) == 0:
+                raise AnalysisServiceNotFoundException(f"No emotional profiles found for request: {analysis_requests}")
+
             return [EmotionalProfile(**entry) for entry in data]
         except pydantic.ValidationError as e:
             raise AnalysisServiceException(f"Failed to convert API response to EmotionalProfile object: {e}")
+        except EndpointRequesterException as e:
+            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
