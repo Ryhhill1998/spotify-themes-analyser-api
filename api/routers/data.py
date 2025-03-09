@@ -53,7 +53,7 @@ async def get_item_response(
     tokens : TokenData
         The access and refresh tokens for authentication.
     spotify_data_service : SpotifyDataService
-        The Spotify data service used to fetch the item details.
+        The Spotify data service used to fetch the item details from the Spotify API.
 
     Returns
     -------
@@ -98,7 +98,7 @@ async def get_track_by_id(
     tokens : TokenCookieExtractionDependency
         Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
-        Dependency for interacting with Spotify's data service.
+        Dependency for retrieving the track data from the Spotify API.
 
     Returns
     -------
@@ -108,9 +108,9 @@ async def get_track_by_id(
     Raises
     ------
     HTTPException
-        Raised with a 404 Not Found status code if the requested Spotify item was not found.
+        Raised with a 404 Not Found status code if the requested Spotify track was not found.
         Raised with a 500 Internal Server Error status code if another exception occurs while retrieving the requested
-        item from Spotify.
+        track from Spotify.
     """
 
     track_response = await get_item_response(
@@ -139,7 +139,7 @@ async def get_artist_by_id(
     tokens : TokenCookieExtractionDependency
         Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
-        Dependency for interacting with Spotify's data service.
+        Dependency for retrieving the artist data from the Spotify API.
 
     Returns
     -------
@@ -149,9 +149,9 @@ async def get_artist_by_id(
     Raises
     ------
     HTTPException
-        Raised with a 404 Not Found status code if the requested Spotify item was not found.
+        Raised with a 404 Not Found status code if the requested Spotify artist was not found.
         Raised with a 500 Internal Server Error status code if another exception occurs while retrieving the requested
-        item from Spotify.
+        artist from Spotify.
     """
 
     artist_response = await get_item_response(
@@ -175,7 +175,7 @@ async def get_top_items_response(
     Parameters
     ----------
     spotify_data_service : SpotifyDataService
-        The Spotify data service used to fetch the top items.
+        The Spotify data service used to fetch the top items from the Spotify API.
     tokens : TokenData
         The access and refresh tokens for authentication.
     item_type : ItemType
@@ -224,7 +224,7 @@ async def get_top_artists(
     tokens : TokenCookieExtractionDependency
         Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
-        Dependency for interacting with Spotify's data service.
+        Dependency for retrieving the user's top artists from the Spotify API.
 
     Returns
     -------
@@ -234,9 +234,9 @@ async def get_top_artists(
     Raises
     ------
     HTTPException
-        Raised with a 404 Not Found status code if the user's requested top Spotify items were empty.
-        Raised with a 500 Internal Server Error status code if another exception occurs while retrieving the requested
-        data from Spotify.
+        Raised with a 404 Not Found status code if the user's requested top Spotify artists were empty.
+        Raised with a 500 Internal Server Error status code if another exception occurs while retrieving the user's top
+        artists from Spotify.
     """
 
     response = await get_top_items_response(
@@ -261,7 +261,7 @@ async def get_top_tracks(
     tokens : TokenCookieExtractionDependency
         Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
-        Dependency for interacting with Spotify's data service.
+        Dependency for retrieving the user's top tracks from the Spotify API.
 
     Returns
     -------
@@ -271,9 +271,9 @@ async def get_top_tracks(
     Raises
     ------
     HTTPException
-        Raised with a 404 Not Found status code if the user's requested top Spotify items were empty.
-        Raised with a 500 Internal Server Error status code if another exception occurs while retrieving the requested
-        data from Spotify.
+        Raised with a 404 Not Found status code if the user's requested top tracks items were empty.
+        Raised with a 500 Internal Server Error status code if another exception occurs while retrieving the user's top
+        tracks from Spotify.
     """
 
     response = await get_top_items_response(
@@ -298,7 +298,7 @@ async def get_top_emotions(
     tokens : TokenCookieExtractionDependency
         Dependency that extracts tokens from cookies.
     insights_service : InsightsServiceDependency
-        Dependency for analyzing emotional responses.
+        Dependency for analyzing and retrieving the top emotions in the user's Spotify listening history.
 
     Returns
     -------
@@ -309,7 +309,7 @@ async def get_top_emotions(
     ------
     HTTPException
         Raised with a 500 Internal Server Error status code if an exception occurs while computing the user's top
-        emotions insights.
+        emotions.
     """
 
     try:
