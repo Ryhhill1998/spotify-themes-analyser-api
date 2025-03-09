@@ -204,7 +204,7 @@ class SpotifyDataService(MusicService):
             elif item_type == TopItemType.ARTISTS:
                 return self._create_top_artist_object(data=data)
             else:
-                raise SpotifyDataServiceException(f"Invalid item_type: {item_type} - {e}")
+                raise SpotifyDataServiceException(f"Invalid item_type: {item_type}")
         except KeyError as e:
             missing_key = e.args[0]
             raise SpotifyDataServiceException(
