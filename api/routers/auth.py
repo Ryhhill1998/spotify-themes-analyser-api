@@ -6,6 +6,7 @@ from fastapi import Response, APIRouter, Request, HTTPException, status
 from fastapi.responses import RedirectResponse
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
+from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/auth")
@@ -56,11 +57,11 @@ def validate_state(stored_state: str, received_state: str):
     Raises
     ------
     ValueError
-        If the stored state does not match the received state.
+        If the received state does not match the stored state.
     """
 
     if stored_state != received_state:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not authenticate request.")
+        raise ValueError("Could not authenticate request.")
 
 
 @router.get("/music/login")
@@ -105,6 +106,9 @@ async def callback(
     After a user logs in with Spotify, this route processes the callback, verifies the state parameter to prevent CSRF
     attacks, retrieves access and refresh tokens and redirects the user back to the frontend of the application.
 
+    If authentication fails, access and refresh tokens will not be set in the cookies and the user will be redirected
+    to the authentication-failure route in the frontend.
+
     Parameters
     ----------
     code : str
@@ -122,13 +126,6 @@ async def callback(
     -------
     Response
         A redirect response to the frontend application with access and refresh tokens stored in cookies.
-
-    Raises
-    ------
-    HTTPError
-        If there is an error during the token exchange process with Spotify.
-    ValueError
-        If the state validation fails, indicating a potential CSRF attack.
     """
 
     try:
@@ -144,6 +141,6 @@ async def callback(
         set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
 
         return response
-    except (HTTPError, ValueError):
+    except (SpotifyAuthServiceException, ValueError):
         error_params = urllib.parse.urlencode({"error": "authentication-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
