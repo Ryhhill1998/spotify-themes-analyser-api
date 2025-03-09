@@ -2,15 +2,14 @@ import json
 from enum import Enum
 from typing import Any
 import httpx
-from httpx import Response
 
 
 class EndpointRequesterException(Exception):
     """
     Raised when an HTTP request fails for any reason other than a 401 or 404 status code.
 
-    This exception is triggered when an HTTP request made using `httpx` results in
-    an error that is not a 401 Unauthorized or 404 Not Found status code.
+    This exception is triggered when an HTTP request made using `httpx` or the subsequent processing of the response 
+    data results in an error that is not a 401 Unauthorised or 404 Not Found status code.
 
     Parameters
     ----------
@@ -106,35 +105,6 @@ class EndpointRequester:
         self.client = client
 
     @staticmethod
-    def _validate_and_parse_response(res: Response):
-        """
-        Validates and parses an HTTP response.
-
-        This method checks whether the response contains an HTTP status error (non 2XX code), raises an exception if
-        needed and returns the JSON-parsed response.
-
-        Parameters
-        ----------
-        res : httpx.Response
-            The response object from an HTTP request.
-
-        Returns
-        -------
-        Any
-            The JSON-decoded content of the response.
-
-        Raises
-        ------
-        httpx.HTTPStatusError
-            If the response contains an HTTP error status code.
-        json.decoder.JSONDecodeError
-            If the response body is not valid JSON.
-        """
-
-        res.raise_for_status()
-        return res.json()
-
-    @staticmethod
     def _handle_http_status_error(e: httpx.HTTPStatusError):
         """
         Handles HTTP status errors by raising appropriate exceptions.
@@ -147,17 +117,19 @@ class EndpointRequester:
         Raises
         ------
         EndpointRequesterUnauthorisedException
-            If the response status code is 401 Unauthorized.
+            If the response status code is 401 Unauthorised.
         EndpointRequesterNotFoundException
             If the response status code is 404 Not Found.
         EndpointRequesterException
             For all other non-2XX status codes.
         """
 
-        if e.response.status_code == 401:
-            print(f"Unauthorized request: {e}")
+        status_code = e.response.status_code
+
+        if status_code == 401:
+            print(f"Unauthorised request: {e}")
             raise EndpointRequesterUnauthorisedException()
-        elif e.response.status_code == 404:
+        elif status_code == 404:
             print(f"Resource not found: {e}")
             raise EndpointRequesterNotFoundException()
         else:
@@ -178,7 +150,7 @@ class EndpointRequester:
         Sends an HTTP request asynchronously and handles errors.
 
         This method sends an HTTP request using the specified method, URL and optional parameters.
-        It handles various exceptions, including timeout errors, invalid responses and HTTP status errors.
+        It handles various exceptions including timeout errors, invalid responses and HTTP status errors.
 
         Parameters
         ----------
@@ -207,7 +179,9 @@ class EndpointRequester:
         EndpointRequesterException
             Raised for request failures, timeouts, invalid JSON responses or other errors.
         EndpointRequesterUnauthorisedException
-            Raised if the request fails with a 401 Unauthorized status.
+            Raised if the request fails with a 401 Unauthorised status.
+        EndpointRequesterNotFoundException
+            Raised if the request fails with a 404 Not Found status.
         """
 
         try:
@@ -220,7 +194,8 @@ class EndpointRequester:
                 json=json_data,
                 timeout=timeout
             )
-            return self._validate_and_parse_response(res)
+            res.raise_for_status()
+            return res.json()
         except json.decoder.JSONDecodeError as e:
             print(f"Invalid JSON response: {e}")
             raise EndpointRequesterException("Response not valid JSON.")
@@ -266,7 +241,7 @@ class EndpointRequester:
         EndpointRequesterException
             Raised if the request fails.
         EndpointRequesterUnauthorisedException
-            Raised if the request receives a 401 Unauthorized response.
+            Raised if the request receives a 401 Unauthorised response.
         """
 
         return await self._request(method=RequestMethod.GET, url=url, headers=headers, params=params, timeout=timeout)
@@ -305,7 +280,7 @@ class EndpointRequester:
         EndpointRequesterException
             Raised if the request fails.
         EndpointRequesterUnauthorisedException
-            Raised if the request receives a 401 Unauthorized response.
+            Raised if the request receives a 401 Unauthorised response.
         """
 
         return await self._request(
