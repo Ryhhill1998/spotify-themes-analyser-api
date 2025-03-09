@@ -7,7 +7,7 @@ from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
     EndpointRequesterNotFoundException, EndpointRequesterException
 from api.services.music.music_service import MusicService
-from api.services.music.spotify_auth_service import SpotifyAuthService
+from api.services.music.spotify_auth_service import SpotifyAuthService, SpotifyAuthServiceException
 
 
 class SpotifyDataServiceException(Exception):
@@ -288,7 +288,7 @@ class SpotifyDataService(MusicService):
         SpotifyDataServiceNotFoundException
             If no top items are found.
         SpotifyDataServiceException
-            If there is an exception when calling the Spotify API or the response data is missing expected fields or
+            If the Spotify API data or token refresh requests fail or the response data is missing expected fields or
             fails validation.
         """
 
@@ -317,6 +317,8 @@ class SpotifyDataService(MusicService):
             return top_items_response
         except EndpointRequesterException as e:
             raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")
+        except SpotifyAuthServiceException as e:
+            raise SpotifyDataServiceException(f"Failed to refresh access token - {e}")
 
     async def _get_item_by_id(self, access_token: str, item_id: str, item_type: TopItemType) -> TopItem:
         """
@@ -375,7 +377,7 @@ class SpotifyDataService(MusicService):
         SpotifyDataServiceNotFoundException
             If the requested item does not exist.
         SpotifyDataServiceException
-            If there is an exception when calling the Spotify API or the response data is missing expected fields or
+            If the Spotify API data or token refresh requests fail or the response data is missing expected fields or
             fails validation.
         """
 
@@ -402,3 +404,5 @@ class SpotifyDataService(MusicService):
                 f"Requested item not found - ID: {item_id}, type: {item_type}")
         except EndpointRequesterException as e:
             raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")
+        except SpotifyAuthServiceException as e:
+            raise SpotifyDataServiceException(f"Failed to refresh access token - {e}")
