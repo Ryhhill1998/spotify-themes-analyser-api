@@ -195,7 +195,7 @@ class SpotifyDataService(MusicService):
         Raises
         ------
         SpotifyDataServiceException
-            If a required field is missing or if the item type is invalid.
+            If a required field is missing, if the item type is invalid or data validation fails.
         """
 
         try:
@@ -375,7 +375,8 @@ class SpotifyDataService(MusicService):
         SpotifyDataServiceNotFoundException
             If the requested item does not exist.
         SpotifyDataServiceException
-            If the response data is missing expected fields or fails validation.
+            If there is an exception when calling the Spotify API or the response data is missing expected fields or
+            fails validation.
         """
 
         try:
