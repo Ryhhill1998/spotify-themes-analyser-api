@@ -5,7 +5,7 @@ import pydantic
 
 from api.models import TopItemsResponse, TopItem, TopTrack, TopArtist, TokenData, TrackArtist, TopItemResponse
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
-    EndpointRequesterNotFoundException
+    EndpointRequesterNotFoundException, EndpointRequesterException
 from api.services.music.music_service import MusicService
 from api.services.music.spotify_auth_service import SpotifyAuthService
 
@@ -204,16 +204,16 @@ class SpotifyDataService(MusicService):
             elif item_type == TopItemType.ARTISTS:
                 return self._create_top_artist_object(data=data)
             else:
-                raise SpotifyDataServiceException(f"Invalid item type - {item_type}")
+                raise SpotifyDataServiceException(f"Invalid item_type: {item_type} - {e}")
         except KeyError as e:
             missing_key = e.args[0]
             raise SpotifyDataServiceException(
-                f"Missing expected key '{missing_key}' in response data for {item_type.value}"
+                f"Missing expected key '{missing_key}' in response data for {item_type.value} - {e}"
             )
         except pydantic.ValidationError as e:
-            print(f"Failed to create TopItem from Spotify API data: {e}")
+            print(f"Failed to create TopItem from Spotify API data - {e}")
             raise SpotifyDataServiceException(
-                f"Failed to create TopItem from Spotify API data - data: {data}, type: {item_type}"
+                f"Failed to create TopItem from Spotify API data: {data}, type: {item_type} - {e}"
             )
 
     async def _get_top_items(
@@ -245,7 +245,7 @@ class SpotifyDataService(MusicService):
         Raises
         -------
         SpotifyDataServiceException
-            If the API response data is missing expected fields or fails validation.
+            If creating the top item objects fail.
         """
 
         params = {"time_range": time_range, "limit": limit}
@@ -288,33 +288,37 @@ class SpotifyDataService(MusicService):
         SpotifyDataServiceNotFoundException
             If no top items are found.
         SpotifyDataServiceException
-            If the API response data is missing expected fields or fails validation.
+            If there is an exception when calling the Spotify API or the response data is missing expected fields or
+            fails validation.
         """
 
         try:
-            top_items = await self._get_top_items(
-                access_token=tokens.access_token,
-                item_type=item_type,
-                time_range=time_range.value,
-                limit=limit
-            )
-        except EndpointRequesterUnauthorisedException:
-            tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
-            top_items = await self._get_top_items(
-                access_token=tokens.access_token,
-                item_type=item_type,
-                time_range=time_range.value,
-                limit=limit
-            )
+            try:
+                top_items = await self._get_top_items(
+                    access_token=tokens.access_token,
+                    item_type=item_type,
+                    time_range=time_range.value,
+                    limit=limit
+                )
+            except EndpointRequesterUnauthorisedException:
+                tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
+                top_items = await self._get_top_items(
+                    access_token=tokens.access_token,
+                    item_type=item_type,
+                    time_range=time_range.value,
+                    limit=limit
+                )
 
-        if len(top_items) == 0:
-            raise SpotifyDataServiceNotFoundException(f"No top items found - type: {item_type}")
+            if len(top_items) == 0:
+                raise SpotifyDataServiceNotFoundException(f"No top items found - type: {item_type}")
 
-        top_items_response = TopItemsResponse(data=top_items, tokens=tokens)
+            top_items_response = TopItemsResponse(data=top_items, tokens=tokens)
 
-        return top_items_response
+            return top_items_response
+        except EndpointRequesterException as e:
+            raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")
 
-    async def _get_item_by_id(self, item_id: str, tokens: TokenData, item_type: TopItemType) -> TopItem:
+    async def _get_item_by_id(self, access_token: str, item_id: str, item_type: TopItemType) -> TopItem:
         """
         Fetches a specific item (track or artist) from the Spotify API using its unique identifier.
 
@@ -335,12 +339,12 @@ class SpotifyDataService(MusicService):
         Raises
         ------
         SpotifyDataServiceException
-            If the response data is missing expected fields or fails validation.
+            If creating the top item object fails.
         """
 
         url = f"{self.base_url}/{item_type.value}/{item_id}"
 
-        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {tokens.access_token}"})
+        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
 
         item = self._create_top_item_object(data=data, item_type=item_type)
 
@@ -375,13 +379,25 @@ class SpotifyDataService(MusicService):
         """
 
         try:
-            item = await self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
-        except EndpointRequesterUnauthorisedException:
-            tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
-            item = await self._get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
+            try:
+                item = await self._get_item_by_id(
+                    item_id=item_id,
+                    access_token=tokens.access_token,
+                    item_type=item_type
+                )
+            except EndpointRequesterUnauthorisedException:
+                tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
+                item = await self._get_item_by_id(
+                    item_id=item_id,
+                    access_token=tokens.access_token,
+                    item_type=item_type
+                )
+
+            item_response = TopItemResponse(data=item, tokens=tokens)
+
+            return item_response
         except EndpointRequesterNotFoundException:
-            raise SpotifyDataServiceNotFoundException(f"Requested item not found - ID: {item_id}, type: {item_type}")
-
-        item_response = TopItemResponse(data=item, tokens=tokens)
-
-        return item_response
+            raise SpotifyDataServiceNotFoundException(
+                f"Requested item not found - ID: {item_id}, type: {item_type}")
+        except EndpointRequesterException as e:
+            raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")

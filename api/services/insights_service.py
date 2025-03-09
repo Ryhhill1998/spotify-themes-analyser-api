@@ -143,8 +143,10 @@ class InsightsService:
                 if (track_id := info["max_track"]["track_id"]) is not None
             ]
         except KeyError as e:
-            print(f"total_emotions dict missing required keys - {e}")
-            raise InsightsServiceException(f"total_emotions dict missing required keys - {e}")
+            missing_key = e.args[0]
+            raise InsightsServiceException(
+                f"Missing expected key '{missing_key}' in total_emotions dict - {e}"
+            )
 
 
     async def _get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
