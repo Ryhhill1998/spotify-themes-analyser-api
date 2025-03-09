@@ -5,7 +5,7 @@ import pydantic
 from api.models import TokenData, LyricsRequest, AnalysisRequest, TopEmotionsResponse, TopEmotion, EmotionalProfile
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
-from api.services.music.spotify_data_service import SpotifyDataService, TopItemType, SpotifyDataServiceException
+from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException
 
 
 class InsightsServiceException(Exception):
@@ -212,7 +212,7 @@ class InsightsService:
         try:
             # get top tracks and refreshed tokens (if expired)
             # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
-            top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
+            top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
             top_tracks = top_tracks_response.data
             tokens = top_tracks_response.tokens
 

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
 from api.models import TokenData
-from api.services.music.spotify_data_service import SpotifyDataService, TopItemType
+from api.services.music.spotify_data_service import SpotifyDataService, ItemType
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/data")
@@ -19,7 +19,7 @@ def create_json_response_and_set_token_cookies(content: list[dict] | dict, token
 
 async def get_item_response(
         item_id: str,
-        item_type: TopItemType,
+        item_type: ItemType,
         tokens: TokenData,
         spotify_data_service: SpotifyDataService
 ) -> JSONResponse:
@@ -40,7 +40,7 @@ async def get_track_by_id(
 ) -> JSONResponse:
     track_response = await get_item_response(
         item_id=track_id,
-        item_type=TopItemType.TRACKS,
+        item_type=ItemType.TRACKS,
         tokens=tokens,
         spotify_data_service=spotify_data_service
     )
@@ -56,7 +56,7 @@ async def get_artist_by_id(
 ) -> JSONResponse:
     artist_response = await get_item_response(
         item_id=artist_id,
-        item_type=TopItemType.ARTISTS,
+        item_type=ItemType.ARTISTS,
         tokens=tokens,
         spotify_data_service=spotify_data_service
     )
@@ -67,7 +67,7 @@ async def get_artist_by_id(
 async def get_top_items_response(
         spotify_data_service: SpotifyDataService,
         tokens: TokenData,
-        item_type: TopItemType
+        item_type: ItemType
 ) -> JSONResponse:
     top_items_response = await spotify_data_service.get_top_items(
         tokens=tokens,
@@ -89,7 +89,7 @@ async def get_top_artists(
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
         tokens=tokens,
-        item_type=TopItemType.ARTISTS
+        item_type=ItemType.ARTISTS
     )
 
     return response
@@ -103,7 +103,7 @@ async def get_top_tracks(
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
         tokens=tokens,
-        item_type=TopItemType.TRACKS
+        item_type=ItemType.TRACKS
     )
 
     return response
