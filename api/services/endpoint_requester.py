@@ -176,12 +176,12 @@ class EndpointRequester:
 
         Raises
         ------
-        EndpointRequesterException
-            Raised for request failures, timeouts, invalid JSON responses or other errors.
         EndpointRequesterUnauthorisedException
             Raised if the request fails with a 401 Unauthorised status.
         EndpointRequesterNotFoundException
             Raised if the request fails with a 404 Not Found status.
+        EndpointRequesterException
+            Raised for all other request failures, timeouts or invalid JSON responses.
         """
 
         try:
@@ -238,10 +238,12 @@ class EndpointRequester:
 
         Raises
         ------
-        EndpointRequesterException
-            Raised if the request fails.
         EndpointRequesterUnauthorisedException
             Raised if the request receives a 401 Unauthorised response.
+        EndpointRequesterNotFoundException
+            Raised if the request fails with a 404 Not Found status.
+        EndpointRequesterException
+            Raised for all other request failures, timeouts or invalid JSON responses.
         """
 
         return await self._request(method=RequestMethod.GET, url=url, headers=headers, params=params, timeout=timeout)
@@ -277,10 +279,12 @@ class EndpointRequester:
 
         Raises
         ------
-        EndpointRequesterException
-            Raised if the request fails.
         EndpointRequesterUnauthorisedException
             Raised if the request receives a 401 Unauthorised response.
+        EndpointRequesterNotFoundException
+            Raised if the request fails with a 404 Not Found status.
+        EndpointRequesterException
+            Raised for all other request failures, timeouts or invalid JSON responses.
         """
 
         return await self._request(

@@ -244,12 +244,6 @@ class SpotifyDataService(MusicService):
 
         Raises
         -------
-        EndpointRequesterUnauthorisedException
-            If the request to the Spotify API fails due to a 401 Unauthorised status code.
-        EndpointRequesterNotFoundException
-            If the request to the Spotify API fails due to a 404 Not Found status code.
-        EndpointRequesterException
-            If there is an error while making the request to the Spotify API.
         SpotifyDataServiceException
             If the API response data is missing expected fields or fails validation.
         """
@@ -291,10 +285,6 @@ class SpotifyDataService(MusicService):
 
         Raises
         ------
-        EndpointRequesterUnauthorisedException
-            If the request to the Spotify API fails due to a 401 Unauthorised status code.
-        EndpointRequesterException
-            If there is an error while making the request to the Spotify API.
         SpotifyDataServiceNotFoundException
             If no top items are found.
         SpotifyDataServiceException
@@ -344,12 +334,6 @@ class SpotifyDataService(MusicService):
 
         Raises
         ------
-        EndpointRequesterUnauthorisedException
-            If the request to the Spotify API fails due to a 401 Unauthorised status code.
-        EndpointRequesterNotFoundException
-            If the request to the Spotify API fails due to a 404 Not Found status code.
-        EndpointRequesterException
-            If there is an error while making the request to the Spotify API.
         SpotifyDataServiceException
             If the response data is missing expected fields or fails validation.
         """
@@ -384,10 +368,6 @@ class SpotifyDataService(MusicService):
 
         Raises
         ------
-        EndpointRequesterUnauthorisedException
-            If the request to the Spotify API fails twice due to a 401 Unauthorised status code.
-        EndpointRequesterException
-            If there is an error while making the request to the Spotify API.
         SpotifyDataServiceNotFoundException
             If the requested item does not exist.
         SpotifyDataServiceException

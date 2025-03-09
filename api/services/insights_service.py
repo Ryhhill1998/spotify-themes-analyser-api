@@ -3,9 +3,9 @@ from collections import defaultdict
 import pydantic
 
 from api.models import TokenData, LyricsRequest, AnalysisRequest, TopEmotionsResponse, TopEmotion, EmotionalProfile
-from api.services.analysis_service import AnalysisService
-from api.services.lyrics_service import LyricsService
-from api.services.music.spotify_data_service import SpotifyDataService, TopItemType
+from api.services.analysis_service import AnalysisService, AnalysisServiceException
+from api.services.lyrics_service import LyricsService, LyricsServiceException
+from api.services.music.spotify_data_service import SpotifyDataService, TopItemType, SpotifyDataServiceException
 
 
 class InsightsServiceException(Exception):
@@ -84,8 +84,8 @@ class InsightsService:
         Returns
         -------
         dict
-            A dictionary where keys are emotion names, and values contain total emotion percentages
-            and the track with the highest percentage for that emotion.
+            A dictionary where keys are emotion names, and values contain total emotion percentages and the track with
+            the highest percentage for that emotion.
         """
 
         total_emotions = defaultdict(
@@ -120,22 +120,32 @@ class InsightsService:
         -------
         list[TopEmotion]
             A list of `TopEmotion` objects representing the averaged emotional profile.
+
+        Raises
+        ------
+        InsightsServiceException
+            If result_count is less than or equal to 0 or required keys are missing from total_emotions.
+        pydantic.ValidationError
+            If creating TopEmotion objects fail.
         """
 
         try:
+            if result_count <= 0:
+                raise InsightsServiceException("result_count must be positive.")
+
             return [
                 TopEmotion(
                     name=emotion,
                     percentage=round(info["total"] / result_count, 2),
-                    track_id=info["max_track"]["track_id"]
+                    track_id=track_id
                 )
                 for emotion, info in total_emotions.items()
-                if info["max_track"]["track_id"] is not None
+                if (track_id := info["max_track"]["track_id"]) is not None
             ]
-        except pydantic.ValidationError as e:
-            raise InsightsServiceException(
-                f"Failed to convert total_emotions to TopEmotion list: {e}"
-            )
+        except KeyError as e:
+            print(f"total_emotions dict missing required keys - {e}")
+            raise InsightsServiceException(f"total_emotions dict missing required keys - {e}")
+
 
     async def _get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
         """
@@ -152,6 +162,13 @@ class InsightsService:
         -------
         list[TopEmotion]
             A sorted list of `TopEmotion` objects representing the most prominent emotions.
+
+        Raises
+        ------
+        InsightsServiceException
+            If result_count is less than or equal to 0 or required keys are missing from total_emotions.
+        pydantic.ValidationError
+            If creating TopEmotion objects fail.
         """
 
         emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
@@ -180,16 +197,22 @@ class InsightsService:
         -------
         TopEmotionsResponse
             An object containing the top detected emotions and refreshed authentication tokens.
+
+        Raises
+        ------
+        InsightsServiceException
+            Raised if any of the services fail to retrieve the requested data or if their responses cannot be converted
+            into the appropriate pydantic model.
         """
 
-        # get top tracks and refreshed tokens (if expired)
-        # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
-        top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
-        top_tracks = top_tracks_response.data
-        tokens = top_tracks_response.tokens
-
-        # get lyrics for each track
         try:
+            # get top tracks and refreshed tokens (if expired)
+            # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
+            top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=TopItemType.TRACKS)
+            top_tracks = top_tracks_response.data
+            tokens = top_tracks_response.tokens
+
+            # get lyrics for each track
             lyrics_requests = [
                 LyricsRequest(
                     track_id=entry.id,
@@ -199,29 +222,19 @@ class InsightsService:
                 for entry
                 in top_tracks
             ]
-        except pydantic.ValidationError as e:
-            raise InsightsServiceException(
-                f"Failed to convert spotify_data_service response to LyricsRequest list: {e}"
-            )
 
-        lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
+            lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
 
-        # get top emotions for each set of lyrics
-        try:
+            # get top emotions for each set of lyrics
             analysis_requests = [AnalysisRequest(track_id=entry.track_id, lyrics=entry.lyrics) for entry in lyrics_list]
-        except pydantic.ValidationError as e:
-            raise InsightsServiceException(
-                f"Failed to convert lyrics_service response to AnalysisRequest list: {e}"
-            )
 
-        top_emotions = await self._get_top_emotions(analysis_requests, limit=limit)
+            top_emotions = await self._get_top_emotions(analysis_requests, limit=limit)
 
-        # convert top emotions and tokens to emotional profile response object
-        try:
+            # convert top emotions and tokens to emotional profile response object
             emotional_profile_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
-        except pydantic.ValidationError as e:
-            raise InsightsServiceException(
-                f"Failed to convert top_emotions and tokens to TopEmotionsResponse: {e}"
-            )
 
-        return emotional_profile_response
+            return emotional_profile_response
+        except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
+            raise InsightsServiceException(f"Service failure - {e}")
+        except pydantic.ValidationError as e:
+            raise InsightsServiceException(f"Data validation failure - {e}")
