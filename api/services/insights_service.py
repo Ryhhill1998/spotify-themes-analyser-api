@@ -96,11 +96,14 @@ class InsightsService:
         )
 
         for profile in emotional_profiles:
-            for emotion, percentage in profile.emotional_analysis.model_dump().items():
+            track_id = profile.track_id
+            emotional_analysis = profile.emotional_analysis
+
+            for emotion, percentage in emotional_analysis.model_dump().items():
                 total_emotions[emotion]["total"] += percentage
 
                 if percentage > total_emotions[emotion]["max_track"]["percentage"]:
-                    total_emotions[emotion]["max_track"] = {"track_id": profile.track_id, "percentage": percentage}
+                    total_emotions[emotion]["max_track"] = {"track_id": track_id, "percentage": percentage}
 
         return total_emotions
 
@@ -171,8 +174,6 @@ class InsightsService:
             If result_count is less than or equal to 0 or required keys are missing from total_emotions.
         AnalysisServiceException
             If the analysis service fails to retrieve the emotional profiles or the data returned is empty.
-        pydantic.ValidationError
-            If creating TopEmotion objects fails.
         """
 
         emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
@@ -209,6 +210,9 @@ class InsightsService:
             into the appropriate pydantic model.
         """
 
+        if limit <= 0:
+            raise InsightsServiceException("Limit must be positive.")
+
         try:
             # get top tracks and refreshed tokens (if expired)
             # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
@@ -240,5 +244,5 @@ class InsightsService:
             return emotional_profile_response
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
             raise InsightsServiceException(f"Service failure - {e}")
-        except pydantic.ValidationError as e:
+        except (pydantic.ValidationError, AttributeError) as e:
             raise InsightsServiceException(f"Data validation failure - {e}")
