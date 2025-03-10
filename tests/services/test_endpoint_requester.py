@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException, \
-    EndpointRequesterUnauthorisedException
+    EndpointRequesterUnauthorisedException, EndpointRequesterNotFoundException
 
 TEST_URL = "http://test-url.com"
 SUCCESS_RESPONSE = {"message": "success"}
@@ -96,6 +96,18 @@ async def test_unauthorised_error(endpoint_requester, mock_httpx_client, mock_re
     method_to_test = getattr(endpoint_requester, method)
 
     with pytest.raises(EndpointRequesterUnauthorisedException, match="Unauthorised"):
+        await method_to_test(TEST_URL)
+
+
+@pytest.mark.parametrize("method", ["get", "post"])
+@pytest.mark.asyncio
+async def test_not_found_error(endpoint_requester, mock_httpx_client, mock_response_failure, method):
+    """Test that a 404 response raises EndpointRequesterNotFoundException."""
+    mock_response_failure.status_code = 404
+    mock_httpx_client.request.return_value = mock_response_failure
+    method_to_test = getattr(endpoint_requester, method)
+
+    with pytest.raises(EndpointRequesterNotFoundException, match="Resource not found"):
         await method_to_test(TEST_URL)
 
 @pytest.mark.parametrize("method", ["get", "post"])
