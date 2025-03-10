@@ -81,13 +81,14 @@ def mock_response_data() -> list[dict]:
 
 @pytest.mark.asyncio
 async def test_get_analysis_list_empty_response(analysis_service, endpoint_requester, mock_analysis_requests):
-    """Test that an empty API response raises a AnalysisServiceException."""
+    """Test that an empty API response returns an empty list."""
 
     # API returns empty list
     endpoint_requester.post.return_value = []
 
-    with pytest.raises(AnalysisServiceException, match="No emotional profiles found for request"):
-        await analysis_service.get_emotional_profiles(mock_analysis_requests)
+    emotional_profiles = await analysis_service.get_emotional_profiles(mock_analysis_requests)
+
+    assert emotional_profiles == []
 
 
 @pytest.mark.parametrize("missing_field", ["track_id", "lyrics", "emotional_analysis"])

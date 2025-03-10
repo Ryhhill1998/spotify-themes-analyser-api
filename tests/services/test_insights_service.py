@@ -236,20 +236,6 @@ async def test_get_top_emotions_analysis_data_validation_failure(
         await insights_service.get_top_emotions(mock_tokens)
 
 
-@pytest.mark.parametrize("limit", [0, -1, -2, -100])
-@pytest.mark.asyncio
-async def test_get_top_emotions_invalid_limit(
-        insights_service,
-        mock_spotify_data_service,
-        mock_tokens,
-        mock_lyrics_service,
-        mock_analysis_service,
-        limit
-):
-    with pytest.raises(InsightsServiceException, match="Limit must be positive."):
-        await insights_service.get_top_emotions(tokens=mock_tokens, limit=limit)
-
-
 @pytest.mark.asyncio
 async def test_get_top_emotions_analysis_data_empty(
         insights_service,
@@ -267,6 +253,20 @@ async def test_get_top_emotions_analysis_data_empty(
 
     with pytest.raises(InsightsServiceException, match="result_count must be positive."):
         await insights_service.get_top_emotions(mock_tokens)
+
+
+@pytest.mark.parametrize("limit", [0, -1, -2, -100])
+@pytest.mark.asyncio
+async def test_get_top_emotions_invalid_limit(
+        insights_service,
+        mock_spotify_data_service,
+        mock_tokens,
+        mock_lyrics_service,
+        mock_analysis_service,
+        limit
+):
+    with pytest.raises(InsightsServiceException, match="Limit must be positive."):
+        await insights_service.get_top_emotions(tokens=mock_tokens, limit=limit)
 
 
 @pytest.mark.parametrize("limit", [5, 4, 3, 2, 1])
@@ -287,12 +287,12 @@ async def test_get_top_emotions_returns_expected_response(
     mock_analysis_service.get_emotional_profiles.return_value = mock_analysis_data
 
     top_emotions = [
-            TopEmotion(name="defiance", percentage=0.25, track_id="2"),
-            TopEmotion(name="nostalgia", percentage=0.14, track_id="2"),
-            TopEmotion(name="sadness", percentage=0.12, track_id="2"),
-            TopEmotion(name="spirituality", percentage=0.12, track_id="1"),
-            TopEmotion(name="joy", percentage=0.1, track_id="1")
-        ]
+        TopEmotion(name="defiance", percentage=0.25, track_id="2"),
+        TopEmotion(name="nostalgia", percentage=0.14, track_id="2"),
+        TopEmotion(name="sadness", percentage=0.12, track_id="2"),
+        TopEmotion(name="spirituality", percentage=0.12, track_id="1"),
+        TopEmotion(name="joy", percentage=0.1, track_id="1")
+    ]
 
     expected_response = TopEmotionsResponse(top_emotions=top_emotions[:limit], tokens=mock_spotify_data.tokens)
 

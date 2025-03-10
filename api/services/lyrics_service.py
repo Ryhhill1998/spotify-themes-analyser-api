@@ -87,8 +87,6 @@ class LyricsService:
 
         Raises
         ------
-        LyricsServiceNotFoundException
-            If the API returns an empty list.
         LyricsServiceException
             If the request to the Lyrics API fails or the response fails validation.
         """
@@ -101,9 +99,6 @@ class LyricsService:
                 json_data=[item.model_dump() for item in lyrics_requests],
                 timeout=None
             )
-
-            if len(data) == 0:
-                raise LyricsServiceNotFoundException(f"No lyrics found for request: {lyrics_requests}")
 
             return [LyricsResponse(**entry) for entry in data]
         except pydantic.ValidationError as e:

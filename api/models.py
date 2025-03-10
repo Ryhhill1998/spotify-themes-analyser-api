@@ -178,7 +178,7 @@ class LyricsResponse(LyricsRequest):
         The lyrics of the requested track.
     """
 
-    lyrics: str
+    lyrics: str | None
 
 
 class AnalysisRequest(BaseModel):

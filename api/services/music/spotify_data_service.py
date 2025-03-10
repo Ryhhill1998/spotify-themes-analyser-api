@@ -309,8 +309,6 @@ class SpotifyDataService(MusicService):
 
         Raises
         ------
-        SpotifyDataServiceNotFoundException
-            If no top items are found.
         SpotifyDataServiceException
             If the Spotify API data or token refresh requests fail or response data validation fails.
         """
@@ -331,9 +329,6 @@ class SpotifyDataService(MusicService):
                     time_range=time_range.value,
                     limit=limit
                 )
-
-            if len(top_items) == 0:
-                raise SpotifyDataServiceNotFoundException(f"No top items found - type: {item_type}")
 
             top_items_response = SpotifyItemsResponse(data=top_items, tokens=tokens)
 
@@ -428,8 +423,7 @@ class SpotifyDataService(MusicService):
 
             return item_response
         except EndpointRequesterNotFoundException:
-            raise SpotifyDataServiceNotFoundException(
-                f"Requested item not found - ID: {item_id}, type: {item_type}")
+            raise SpotifyDataServiceNotFoundException(f"Requested item not found - ID: {item_id}, type: {item_type}")
         except EndpointRequesterException as e:
             raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")
         except SpotifyAuthServiceException as e:

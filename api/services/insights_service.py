@@ -151,39 +151,6 @@ class InsightsService:
                 f"Missing expected key '{missing_key}' in total_emotions dict - {e}"
             )
 
-
-    async def _get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
-        """
-        Retrieves and processes emotional profiles for a set of lyrics.
-
-        Parameters
-        ----------
-        analysis_requests : list[AnalysisRequest]
-            A list of `AnalysisRequest` objects containing lyrics to be analyzed.
-        limit : int, optional
-            The number of top emotions to return (default is 5).
-
-        Returns
-        -------
-        list[TopEmotion]
-            A sorted list of `TopEmotion` objects representing the most prominent emotions.
-
-        Raises
-        ------
-        InsightsServiceException
-            If result_count is less than or equal to 0 or required keys are missing from total_emotions.
-        AnalysisServiceException
-            If the analysis service fails to retrieve the emotional profiles or the data returned is empty.
-        """
-
-        emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
-        result_count = len(emotional_profiles)
-        total_emotions = self._aggregate_emotions(emotional_profiles)
-        average_emotions = self._get_average_emotions(total_emotions=total_emotions, result_count=result_count)
-        top_emotions = sorted(average_emotions, key=lambda e: e.percentage, reverse=True)[:limit]
-
-        return top_emotions
-
     async def get_top_emotions(self, tokens: TokenData, limit: int = 5) -> TopEmotionsResponse:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
@@ -215,7 +182,6 @@ class InsightsService:
 
         try:
             # get top tracks and refreshed tokens (if expired)
-            # TODO: Update logic to retrieve top tracks from all 3 time periods for using in emotional profile creation
             top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
             top_tracks = top_tracks_response.data
             tokens = top_tracks_response.tokens
@@ -236,12 +202,18 @@ class InsightsService:
             # get top emotions for each set of lyrics
             analysis_requests = [AnalysisRequest(track_id=entry.track_id, lyrics=entry.lyrics) for entry in lyrics_list]
 
-            top_emotions = await self._get_top_emotions(analysis_requests, limit=limit)
+            emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
+            total_emotions = self._aggregate_emotions(emotional_profiles)
+            average_emotions = self._get_average_emotions(
+                total_emotions=total_emotions,
+                result_count=len(emotional_profiles)
+            )
+            top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
 
-            # convert top emotions and tokens to emotional profile response object
-            emotional_profile_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
+            # convert top emotions and tokens to top emotions response object
+            top_emotions_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
 
-            return emotional_profile_response
+            return top_emotions_response
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
             raise InsightsServiceException(f"Service failure - {e}")
         except (pydantic.ValidationError, AttributeError) as e:

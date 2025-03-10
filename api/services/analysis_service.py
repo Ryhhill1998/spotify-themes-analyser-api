@@ -86,8 +86,6 @@ class AnalysisService:
 
         Raises
         ------
-        AnalysisServiceNotFoundException
-            If the API returns an empty list.
         AnalysisServiceException
             If the request to the analysis API fails or the response fails validation.
         """
@@ -100,9 +98,6 @@ class AnalysisService:
                 json_data=[item.model_dump() for item in analysis_requests],
                 timeout=None
             )
-
-            if len(data) == 0:
-                raise AnalysisServiceNotFoundException(f"No emotional profiles found for request: {analysis_requests}")
 
             return [EmotionalProfile(**entry) for entry in data]
         except pydantic.ValidationError as e:

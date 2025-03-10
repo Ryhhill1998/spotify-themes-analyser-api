@@ -41,13 +41,14 @@ def mock_response_data() -> list[dict[str, str]]:
 
 @pytest.mark.asyncio
 async def test_get_lyrics_list_empty_response(lyrics_service, endpoint_requester, mock_lyrics_requests):
-    """Test that an empty API response raises a LyricsServiceException."""
+    """Test that an empty API response returns an empty list."""
 
     # API returns empty list
     endpoint_requester.post.return_value = []
 
-    with pytest.raises(LyricsServiceException, match="No lyrics found for request"):
-        await lyrics_service.get_lyrics_list(mock_lyrics_requests)
+    lyrics_list = await lyrics_service.get_lyrics_list(mock_lyrics_requests)
+
+    assert lyrics_list == []
 
 
 @pytest.mark.parametrize("missing_field", ["track_id", "artist_name", "track_title", "lyrics"])
