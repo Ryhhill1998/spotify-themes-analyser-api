@@ -64,7 +64,7 @@ def validate_state(stored_state: str, received_state: str):
         raise ValueError("Could not authenticate request.")
 
 
-@router.get("/music/login")
+@router.get("/spotify/login")
 async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     """
     Initiates the Spotify login process.
@@ -92,7 +92,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     return response
 
 
-@router.get("/music/callback")
+@router.get("/spotify/callback")
 async def callback(
         code: str,
         state: str,
