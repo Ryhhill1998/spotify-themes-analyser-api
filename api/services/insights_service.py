@@ -151,6 +151,11 @@ class InsightsService:
                 f"Missing expected key '{missing_key}' in total_emotions dict - {e}"
             )
 
+    @staticmethod
+    def _check_data_not_empty(data: list, label: str):
+        if len(data) == 0:
+            raise InsightsServiceException(f"No {label} found. Cannot proceed further with analysis.")
+
     async def get_top_emotions(self, tokens: TokenData, limit: int = 5) -> TopEmotionsResponse:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
@@ -185,9 +190,7 @@ class InsightsService:
             top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
             top_tracks = top_tracks_response.data
             tokens = top_tracks_response.tokens
-
-            if len(top_tracks) == 0:
-                raise InsightsServiceException("No top tracks found. Cannot proceed further with analysis.")
+            self._check_data_not_empty(data=top_tracks, label="top tracks")
 
             # get lyrics for each track
             lyrics_requests = [
@@ -201,17 +204,13 @@ class InsightsService:
             ]
 
             lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
-
-            if len(lyrics_list) == 0:
-                raise InsightsServiceException("No lyrics found. Cannot proceed further with analysis.")
+            self._check_data_not_empty(data=lyrics_list, label="lyrics")
 
             # get top emotions for each set of lyrics
             analysis_requests = [AnalysisRequest(track_id=entry.track_id, lyrics=entry.lyrics) for entry in lyrics_list]
 
             emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
-
-            if len(emotional_profiles) == 0:
-                raise InsightsServiceException("No emotional profiles found. Cannot proceed further with analysis.")
+            self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
 
             total_emotions = self._aggregate_emotions(emotional_profiles)
             average_emotions = self._get_average_emotions(
