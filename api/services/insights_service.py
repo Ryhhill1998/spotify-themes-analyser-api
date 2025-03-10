@@ -170,7 +170,7 @@ class InsightsService:
         InsightsServiceException
             If result_count is less than or equal to 0 or required keys are missing from total_emotions.
         AnalysisServiceException
-            If the analysis service fails to retrieve the emotional profiles.
+            If the analysis service fails to retrieve the emotional profiles or the data returned is empty.
         pydantic.ValidationError
             If creating TopEmotion objects fails.
         """
