@@ -250,6 +250,25 @@ async def test_get_top_emotions_invalid_limit(
         await insights_service.get_top_emotions(tokens=mock_tokens, limit=limit)
 
 
+@pytest.mark.asyncio
+async def test_get_top_emotions_analysis_data_empty(
+        insights_service,
+        mock_spotify_data_service,
+        mock_tokens,
+        mock_spotify_data,
+        mock_lyrics_service,
+        mock_lyrics_data,
+        mock_analysis_service,
+        mock_analysis_data
+):
+    mock_spotify_data_service.get_top_items.return_value = mock_spotify_data
+    mock_lyrics_service.get_lyrics_list.return_value = mock_lyrics_data
+    mock_analysis_service.get_emotional_profiles.return_value = []
+
+    with pytest.raises(InsightsServiceException, match="result_count must be positive."):
+        await insights_service.get_top_emotions(mock_tokens)
+
+
 @pytest.mark.parametrize("limit", [5, 4, 3, 2, 1])
 @pytest.mark.asyncio
 async def test_get_top_emotions_returns_expected_response(
