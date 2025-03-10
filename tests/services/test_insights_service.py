@@ -237,6 +237,42 @@ async def test_get_top_emotions_analysis_data_validation_failure(
 
 
 @pytest.mark.asyncio
+async def test_get_top_emotions_spotify_data_empty(
+        insights_service,
+        mock_spotify_data_service,
+        mock_tokens,
+        mock_spotify_data
+):
+    mock_spotify_data_service.get_top_items.return_value = mock_spotify_data
+    mock_spotify_data.data = []
+
+    with pytest.raises(
+            InsightsServiceException,
+            match="No top tracks found. Cannot proceed further with analysis."
+    ):
+        await insights_service.get_top_emotions(mock_tokens)
+
+
+@pytest.mark.asyncio
+async def test_get_top_emotions_lyrics_data_empty(
+        insights_service,
+        mock_spotify_data_service,
+        mock_tokens,
+        mock_spotify_data,
+        mock_lyrics_service,
+        mock_lyrics_data
+):
+    mock_spotify_data_service.get_top_items.return_value = mock_spotify_data
+    mock_lyrics_service.get_lyrics_list.return_value = []
+
+    with pytest.raises(
+            InsightsServiceException,
+            match="No lyrics found. Cannot proceed further with analysis."
+    ):
+        await insights_service.get_top_emotions(mock_tokens)
+
+
+@pytest.mark.asyncio
 async def test_get_top_emotions_analysis_data_empty(
         insights_service,
         mock_spotify_data_service,
@@ -251,7 +287,10 @@ async def test_get_top_emotions_analysis_data_empty(
     mock_lyrics_service.get_lyrics_list.return_value = mock_lyrics_data
     mock_analysis_service.get_emotional_profiles.return_value = []
 
-    with pytest.raises(InsightsServiceException, match="result_count must be positive."):
+    with pytest.raises(
+            InsightsServiceException,
+            match="No emotional profiles found. Cannot proceed further with analysis."
+    ):
         await insights_service.get_top_emotions(mock_tokens)
 
 

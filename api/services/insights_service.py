@@ -186,6 +186,9 @@ class InsightsService:
             top_tracks = top_tracks_response.data
             tokens = top_tracks_response.tokens
 
+            if len(top_tracks) == 0:
+                raise InsightsServiceException("No top tracks found. Cannot proceed further with analysis.")
+
             # get lyrics for each track
             lyrics_requests = [
                 LyricsRequest(
@@ -199,10 +202,17 @@ class InsightsService:
 
             lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
 
+            if len(lyrics_list) == 0:
+                raise InsightsServiceException("No lyrics found. Cannot proceed further with analysis.")
+
             # get top emotions for each set of lyrics
             analysis_requests = [AnalysisRequest(track_id=entry.track_id, lyrics=entry.lyrics) for entry in lyrics_list]
 
             emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
+
+            if len(emotional_profiles) == 0:
+                raise InsightsServiceException("No emotional profiles found. Cannot proceed further with analysis.")
+
             total_emotions = self._aggregate_emotions(emotional_profiles)
             average_emotions = self._get_average_emotions(
                 total_emotions=total_emotions,
