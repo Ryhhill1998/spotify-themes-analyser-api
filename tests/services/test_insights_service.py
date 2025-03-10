@@ -236,6 +236,20 @@ async def test_get_top_emotions_analysis_data_validation_failure(
         await insights_service.get_top_emotions(mock_tokens)
 
 
+@pytest.mark.parametrize("limit", [0, -1, -2, -100])
+@pytest.mark.asyncio
+async def test_get_top_emotions_invalid_limit(
+        insights_service,
+        mock_spotify_data_service,
+        mock_tokens,
+        mock_lyrics_service,
+        mock_analysis_service,
+        limit
+):
+    with pytest.raises(InsightsServiceException, match="Limit must be positive."):
+        await insights_service.get_top_emotions(tokens=mock_tokens, limit=limit)
+
+
 @pytest.mark.parametrize("limit", [5, 4, 3, 2, 1])
 @pytest.mark.asyncio
 async def test_get_top_emotions_returns_expected_response(
