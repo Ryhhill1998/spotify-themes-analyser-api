@@ -27,12 +27,12 @@ class SpotifyAuthService(MusicService):
     """
     Service responsible for handling authentication and token management for Spotify's API.
 
-    This class provides methods for generating authorization URLs, obtaining access tokens and refreshing expired
+    This class provides methods for generating authorization URLs, obtaining access tokens, and refreshing expired
     tokens.
 
     Inherits from
     -------------
-    MusicService, which provides core attributes such as client_id, client_secret, base_url and endpoint_requester.
+    MusicService, which provides core attributes such as client_id, client_secret, base_url, and endpoint_requester.
 
     Attributes
     ----------
@@ -40,7 +40,19 @@ class SpotifyAuthService(MusicService):
         The URI to which Spotify will redirect after authentication.
     auth_scope : str
         The scope of permissions requested from the Spotify API.
+
+    Methods
+    -------
+    generate_auth_url(state: str) -> str
+        Generates the Spotify authorization URL for user authentication.
+
+    create_tokens(auth_code: str) -> TokenData
+        Exchanges an authorization code for access and refresh tokens.
+
+    refresh_tokens(refresh_token: str) -> TokenData
+        Refreshes an expired access token using the refresh token.
     """
+
 
     def __init__(
             self,
@@ -78,7 +90,7 @@ class SpotifyAuthService(MusicService):
         self.auth_scope = auth_scope
 
     @cached_property
-    def auth_header(self) -> str:
+    def _auth_header(self) -> str:
         """
         Generates the base64-encoded authorization header required for authentication requests and caches it so it is
         only computed once.
@@ -140,7 +152,7 @@ class SpotifyAuthService(MusicService):
 
         try:
             url = f"{self.base_url}/api/token"
-            headers = {"Authorization": f"Basic {self.auth_header}", "Content-Type": "application/x-www-form-urlencoded"}
+            headers = {"Authorization": f"Basic {self._auth_header}", "Content-Type": "application/x-www-form-urlencoded"}
 
             token_data = await self.endpoint_requester.post(url=url, headers=headers, data=data)
 

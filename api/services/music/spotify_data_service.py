@@ -88,7 +88,16 @@ class SpotifyDataService(MusicService):
     ----------
     spotify_auth_service : SpotifyAuthService
         The authentication service used for handling token management.
+
+    Methods
+    -------
+    get_top_items(tokens, item_type, time_range=TimeRange.MEDIUM, limit=20) -> SpotifyItemsResponse
+        Retrieves the top tracks or artists for a user.
+
+    get_item_by_id(item_id, tokens, item_type) -> SpotifyItemResponse
+        Retrieves a specific track or artist by its unique identifier, handling authentication and errors.
     """
+
 
     def __init__(
             self,
