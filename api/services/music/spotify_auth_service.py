@@ -106,13 +106,11 @@ class SpotifyAuthService(MusicService):
             The generated Spotify authorization URL.
         """
 
-        scope = self.auth_scope
-
         params = {
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": self.redirect_uri,
-            "scope": scope,
+            "scope": self.auth_scope,
             "state": state
         }
 
