@@ -1,11 +1,12 @@
 import secrets
 import urllib.parse
+from typing import Annotated
 
-from fastapi import Response, APIRouter, Request
+from fastapi import Response, APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
 
-from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
-from api.services.music.spotify_auth_service import SpotifyAuthServiceException
+from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency, get_spotify_auth_service
+from api.services.music.spotify_auth_service import SpotifyAuthServiceException, SpotifyAuthService
 from api.utils import set_response_cookie
 
 router = APIRouter(prefix="/auth")
@@ -30,7 +31,7 @@ def create_custom_redirect_response(redirect_url: str) -> Response:
 
 
 @router.get("/spotify/login")
-async def login(spotify_auth_service: SpotifyAuthServiceDependency):
+async def login(spotify_auth_service: Annotated[SpotifyAuthService, Depends(get_spotify_auth_service)]):
     """
     Initiates the Spotify login process.
 
