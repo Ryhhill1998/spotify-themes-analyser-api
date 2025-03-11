@@ -3,7 +3,8 @@ import urllib.parse
 
 import pydantic
 
-from api.models import SpotifyItemsResponse, SpotifyItem, SpotifyTrack, SpotifyArtist, TokenData, TrackArtist, SpotifyItemResponse
+from api.models import SpotifyItemsResponse, SpotifyItem, SpotifyTrack, SpotifyArtist, TokenData, SpotifyTrackArtist, \
+    SpotifyItemResponse, SpotifyTrackData, SpotifyArtistData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
     EndpointRequesterNotFoundException, EndpointRequesterException
 from api.services.music.music_service import MusicService
@@ -130,6 +131,13 @@ class SpotifyDataService(MusicService):
         )
         self.spotify_auth_service = spotify_auth_service
 
+
+    def _validate_type(obj, obj_name: str, expected_type: type):
+        if not isinstance(obj, expected_type):
+            raise SpotifyDataServiceException(
+                f"Expected type {expected_type} for {obj_name}. Actual type: {type(obj)}"
+            )
+
     @staticmethod
     def _create_track(data: dict) -> SpotifyTrack:
         """
@@ -147,25 +155,26 @@ class SpotifyDataService(MusicService):
 
         Raises
         -------
-        KeyError
-            If a required key is not present within data.
+        pydantic.ValidationError
+            If data validation fails.
         """
 
-        album = data["album"]
-        artist = data["artists"][0]
+        track_data = SpotifyTrackData(**data)
 
-        track_artist = TrackArtist(id=artist["id"], name=artist["name"])
+        artist = track_data.artists[0]
+        track_artist = SpotifyTrackArtist(id=artist.id, name=artist.name)
+        album = track_data.album
 
         top_track = SpotifyTrack(
-            id=data["id"],
-            name=data["name"],
-            images=album["images"],
-            spotify_url=data["external_urls"]["spotify"],
+            id=track_data.id,
+            name=track_data.name,
+            images=album.images,
+            spotify_url=track_data.external_urls.spotify,
             artist=track_artist,
-            release_date=album["release_date"],
-            explicit=data["explicit"],
-            duration_ms=data["duration_ms"],
-            popularity=data["popularity"]
+            release_date=album.release_date,
+            explicit=track_data.explicit,
+            duration_ms=track_data.duration_ms,
+            popularity=track_data.popularity
         )
 
         return top_track
@@ -187,16 +196,18 @@ class SpotifyDataService(MusicService):
 
         Raises
         -------
-        KeyError
-            If a required key is not present within data.
+        pydantic.ValidationError
+            If data validation fails.
         """
 
+        artist_data = SpotifyArtistData(**data)
+
         top_artist = SpotifyArtist(
-            id=data["id"],
-            name=data["name"],
-            images=data["images"],
-            spotify_url=data["external_urls"]["music"],
-            genres=data["genres"]
+            id=artist_data.id,
+            name=artist_data.name,
+            images=artist_data.images,
+            spotify_url=artist_data.external_urls.spotify,
+            genres=artist_data.genres
         )
 
         return top_artist
@@ -230,11 +241,6 @@ class SpotifyDataService(MusicService):
                 return self._create_artist(data=data)
             else:
                 raise SpotifyDataServiceException(f"Invalid item_type: {item_type}")
-        except KeyError as e:
-            missing_key = e.args[0]
-            raise SpotifyDataServiceException(
-                f"Missing expected key '{missing_key}' in response data for {item_type.value} - {e}"
-            )
         except pydantic.ValidationError as e:
             print(f"Failed to create TopItem from Spotify API data - {e}")
             raise SpotifyDataServiceException(
@@ -329,7 +335,7 @@ class SpotifyDataService(MusicService):
                     limit=limit
                 )
             except EndpointRequesterUnauthorisedException:
-                tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
+                tokens = await self.spotify_auth_service.refresh_tokens(tokens.refresh_token)
                 top_items = await self._get_top_items(
                     access_token=tokens.access_token,
                     item_type=item_type,
@@ -419,7 +425,7 @@ class SpotifyDataService(MusicService):
                     item_type=item_type
                 )
             except EndpointRequesterUnauthorisedException:
-                tokens = await self.spotify_auth_service.refresh_tokens(refresh_token=tokens.refresh_token)
+                tokens = await self.spotify_auth_service.refresh_tokens(tokens.refresh_token)
                 item = await self._get_item_by_id(
                     item_id=item_id,
                     access_token=tokens.access_token,

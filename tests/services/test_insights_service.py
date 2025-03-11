@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from api.models import SpotifyItemsResponse, SpotifyItem, TokenData, LyricsResponse, EmotionalProfile, \
-    EmotionalAnalysis, SpotifyTrack, SpotifyArtist, TrackArtist, TopEmotionsResponse, TopEmotion
+    EmotionalAnalysis, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, TopEmotionsResponse, TopEmotion
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.insights_service import InsightsService, InsightsServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
@@ -53,7 +53,7 @@ def mock_spotify_data(mock_tokens) -> SpotifyItemsResponse:
             name="Item 1",
             images=[{"name": "Item 1 image", "url": "http://test.com/item-1.png"}],
             spotify_url="http://test.com/item-1",
-            artist=TrackArtist(id="1", name="Artist A"),
+            artist=SpotifyTrackArtist(id="1", name="Artist A"),
             release_date="01/01/1999",
             explicit=True,
             duration_ms=1,
@@ -64,7 +64,7 @@ def mock_spotify_data(mock_tokens) -> SpotifyItemsResponse:
             name="Item 2",
             images=[{"name": "Item 2 image", "url": "http://test.com/item-2.png"}],
             spotify_url="http://test.com/item-2",
-            artist=TrackArtist(id="2", name="Artist B"),
+            artist=SpotifyTrackArtist(id="2", name="Artist B"),
             release_date="01/01/2000",
             explicit=False,
             duration_ms=100,

@@ -33,6 +33,50 @@ class SpotifyItemBase(BaseModel):
     name: str
 
 
+class SpotifyTrackArtist(SpotifyItemBase):
+    """
+    Represents an artist associated with a track.
+
+    This model is a simplified version of `SpotifyArtist`, containing only the basic artist details (ID and name).
+
+    Inherits from
+    -------------
+    SpotifyItemBase, which provides the id and name attributes.
+    """
+
+    pass
+
+
+class SpotifyItemExternalUrls(BaseModel):
+    spotify: str
+
+
+class SpotifyItemImage(BaseModel):
+    height: int
+    width: int
+    url: str
+
+
+class SpotifyTrackAlbum(BaseModel):
+    images: list[SpotifyItemImage]
+    release_date: str
+
+
+class SpotifyTrackData(SpotifyItemBase):
+    album: SpotifyTrackAlbum
+    artists: list[SpotifyTrackArtist]
+    external_urls: SpotifyItemExternalUrls
+    explicit: bool
+    duration_ms: int
+    popularity: int
+
+
+class SpotifyArtistData(SpotifyItemBase):
+    images: list[SpotifyItemImage]
+    external_urls: SpotifyItemExternalUrls
+    genres: list[str]
+
+
 class SpotifyItem(SpotifyItemBase):
     """
     Represents a Spotify item with additional metadata.
@@ -49,7 +93,7 @@ class SpotifyItem(SpotifyItemBase):
         The Spotify URL for the item.
     """
 
-    images: list[dict]
+    images: list[SpotifyItemImage]
     spotify_url: str
 
 
@@ -70,20 +114,6 @@ class SpotifyArtist(SpotifyItem):
     genres: list[str]
 
 
-class TrackArtist(SpotifyItemBase):
-    """
-    Represents an artist associated with a track.
-
-    This model is a simplified version of `SpotifyArtist`, containing only the basic artist details (ID and name).
-
-    Inherits from
-    -------------
-    SpotifyItemBase, which provides the id and name attributes.
-    """
-
-    pass
-
-
 class SpotifyTrack(SpotifyItem):
     """
     Represents a Spotify track with associated metadata.
@@ -94,7 +124,7 @@ class SpotifyTrack(SpotifyItem):
 
     Attributes
     ----------
-    artist : TrackArtist
+    artist : SpotifyTrackArtist
         The primary artist of the track.
     release_date : str
         The release date of the track.
@@ -106,7 +136,7 @@ class SpotifyTrack(SpotifyItem):
         The popularity score of the track (0-100).
     """
 
-    artist: TrackArtist
+    artist: SpotifyTrackArtist
     release_date: str
     explicit: bool
     duration_ms: int
