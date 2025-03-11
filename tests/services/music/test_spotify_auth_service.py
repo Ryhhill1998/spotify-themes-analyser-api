@@ -11,6 +11,7 @@ TEST_CLIENT_SECRET = "client_secret"
 TEST_REDIRECT_URI = "http://redirect-test-url.com"
 TEST_SCOPE = "user-top-read"
 
+
 # 1. Test that auth_header generates the authorisation header correctly.
 # 2. Test that generate_auth_url returns expected url.
 # 3. Test that _get_tokens raises SpotifyAuthServiceException if Spotify API request fails.
@@ -36,6 +37,11 @@ def spotify_auth_service(endpoint_requester) -> SpotifyAuthService:
         auth_scope=TEST_SCOPE,
         endpoint_requester=endpoint_requester
     )
+
+
+@pytest.fixture
+def mock_tokens_response() -> dict[str, str]:
+    return {"access_token": "new_access", "refresh_token": "new_refresh"}
 
 
 def test_auth_header(spotify_auth_service):
@@ -73,42 +79,50 @@ async def test__get_tokens_invalid_response_data(spotify_auth_service, endpoint_
 
 
 @pytest.mark.asyncio
-async def test_create_tokens_no_refresh_token(spotify_auth_service, endpoint_requester):
-    endpoint_requester.post.return_value = {"access_token": "test"}
+async def test_create_tokens_no_refresh_token(spotify_auth_service, endpoint_requester, mock_tokens_response):
+    endpoint_requester.post.return_value = mock_tokens_response
+    mock_tokens_response.pop("refresh_token")
 
     with pytest.raises(SpotifyAuthServiceException, match="Failed to validate tokens"):
         await spotify_auth_service.create_tokens("auth_code")
 
 
 @pytest.mark.asyncio
-async def test_create_tokens_success(spotify_auth_service, endpoint_requester):
-    access_token = "access"
-    refresh_token = "refresh"
-    endpoint_requester.post.return_value = {"access_token": access_token, "refresh_token": refresh_token}
+async def test_create_tokens_success(spotify_auth_service, endpoint_requester, mock_tokens_response):
+    endpoint_requester.post.return_value = mock_tokens_response
 
     tokens = await spotify_auth_service.create_tokens("auth_code")
 
-    assert tokens.access_token == access_token and tokens.refresh_token == refresh_token
+    assert tokens.access_token == "new_access" and tokens.refresh_token == "new_refresh"
 
 
 @pytest.mark.asyncio
-async def test_refresh_tokens_new_refresh_token_returned(spotify_auth_service, endpoint_requester):
-    access_token = "access"
-    refresh_token = "new_refresh"
-    endpoint_requester.post.return_value = {"access_token": access_token, "refresh_token": refresh_token}
+async def test_refresh_tokens_new_refresh_token_returned(
+        spotify_auth_service,
+        endpoint_requester,
+        mock_tokens_response
+):
+    endpoint_requester.post.return_value = mock_tokens_response
 
     tokens = await spotify_auth_service.refresh_tokens("old_refresh")
 
-    assert tokens.access_token == access_token and tokens.refresh_token == refresh_token
+    assert tokens.access_token == "new_access" and tokens.refresh_token == "new_refresh"
 
 
 @pytest.mark.asyncio
-async def test_refresh_tokens_no_new_refresh_token_returned(spotify_auth_service, endpoint_requester):
-    access_token = "access"
+async def test_refresh_tokens_no_new_refresh_token_returned(
+        spotify_auth_service,
+        endpoint_requester,
+        mock_tokens_response
+):
     old_refresh_token = "old_refresh"
-    endpoint_requester.post.return_value = {"access_token": access_token}
+    endpoint_requester.post.return_value = mock_tokens_response
+    mock_tokens_response.pop("refresh_token")
 
     tokens = await spotify_auth_service.refresh_tokens(old_refresh_token)
 
-    assert tokens.access_token == access_token and tokens.refresh_token == old_refresh_token
-
+    assert (
+            tokens.access_token == "new_access" and
+            tokens.refresh_token != "new_refresh" and
+            tokens.refresh_token == old_refresh_token
+    )
