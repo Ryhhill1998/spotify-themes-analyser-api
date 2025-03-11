@@ -29,40 +29,6 @@ def create_custom_redirect_response(redirect_url: str) -> Response:
     return Response(headers={"location": redirect_url}, status_code=307)
 
 
-def generate_state() -> str:
-    """
-    Generates a random state token for OAuth authentication.
-
-    Returns
-    -------
-    str
-        A randomly generated hexadecimal string to be used as a state parameter in OAuth.
-    """
-
-    return secrets.token_hex(16)
-
-
-def validate_state(stored_state: str, received_state: str):
-    """
-    Validates the OAuth state to prevent CSRF attacks.
-
-    Parameters
-    ----------
-    stored_state : str
-        The state stored in the user's cookies during the login request.
-    received_state : str
-        The state received in the callback request.
-
-    Raises
-    ------
-    ValueError
-        If the received state does not match the stored state.
-    """
-
-    if stored_state != received_state:
-        raise ValueError("Could not authenticate request.")
-
-
 @router.get("/spotify/login")
 async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     """
@@ -82,7 +48,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
         A redirect response to Spotify's OAuth authorization page with a state cookie.
     """
 
-    state = generate_state()
+    state = secrets.token_hex(16)
     url = spotify_auth_service.generate_auth_url(state)
 
     response = create_custom_redirect_response(url)
@@ -130,7 +96,8 @@ async def callback(
     try:
         # make sure that state stored in login route is same as that received after authenticating
         # prevents csrf
-        validate_state(stored_state=request.cookies["oauth_state"], received_state=state)
+        if request.cookies["oauth_state"] != state:
+            raise ValueError("Could not authenticate request.")
 
         # get access and refresh tokens from music API to allow future API calls on behalf of the user
         tokens = await spotify_auth_service.create_tokens(code)
