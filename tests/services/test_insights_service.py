@@ -2,7 +2,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from api.models import SpotifyItemsResponse, SpotifyItem, TokenData, LyricsResponse, EmotionalProfile, \
-    EmotionalAnalysis, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, TopEmotionsResponse, TopEmotion
+    EmotionalAnalysis, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, TopEmotionsResponse, TopEmotion, \
+    SpotifyItemImage
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.insights_service import InsightsService, InsightsServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
@@ -49,23 +50,27 @@ def mock_tokens() -> TokenData:
 def mock_spotify_data(mock_tokens) -> SpotifyItemsResponse:
     data = [
         SpotifyTrack(
-            id="1",
-            name="Item 1",
-            images=[{"name": "Item 1 image", "url": "http://test.com/item-1.png"}],
-            spotify_url="http://test.com/item-1",
-            artist=SpotifyTrackArtist(id="1", name="Artist A"),
+            id="0",
+            name=f"Track 0",
+            images=[
+                SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+            ],
+            spotify_url="http://spotify-test-url.com",
+            artist=SpotifyTrackArtist(id="0", name=f"Artist 0"),
             release_date="01/01/1999",
-            explicit=True,
-            duration_ms=1,
-            popularity=0
+            explicit=False,
+            duration_ms=100,
+            popularity=50
         ),
         SpotifyTrack(
-            id="2",
-            name="Item 2",
-            images=[{"name": "Item 2 image", "url": "http://test.com/item-2.png"}],
-            spotify_url="http://test.com/item-2",
-            artist=SpotifyTrackArtist(id="2", name="Artist B"),
-            release_date="01/01/2000",
+            id="1",
+            name=f"Track 0",
+            images=[
+                SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+            ],
+            spotify_url="http://spotify-test-url.com",
+            artist=SpotifyTrackArtist(id="1", name=f"Artist 1"),
+            release_date="01/01/1999",
             explicit=False,
             duration_ms=100,
             popularity=50
@@ -77,8 +82,8 @@ def mock_spotify_data(mock_tokens) -> SpotifyItemsResponse:
 @pytest.fixture
 def mock_lyrics_data() -> list[LyricsResponse]:
     return [
-        LyricsResponse(track_id="1", artist_name="Artist A", track_title="Song A", lyrics="Lyrics for Song A"),
-        LyricsResponse(track_id="2", artist_name="Artist B", track_title="Song B", lyrics="Lyrics for Song B"),
+        LyricsResponse(track_id="1", artist_name="Artist 0", track_title="Track 0", lyrics="Lyrics for Track 0"),
+        LyricsResponse(track_id="2", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
     ]
 
 
@@ -87,7 +92,7 @@ def mock_analysis_data() -> list[EmotionalProfile]:
     return [
         EmotionalProfile(
             track_id="1",
-            lyrics="Lyrics for Song A",
+            lyrics="Lyrics for Track 0",
             emotional_analysis=EmotionalAnalysis(
                 joy=0.2,
                 sadness=0.1,
@@ -108,7 +113,7 @@ def mock_analysis_data() -> list[EmotionalProfile]:
         ),
         EmotionalProfile(
             track_id="2",
-            lyrics="Lyrics for Song B",
+            lyrics="Lyrics for Track 1",
             emotional_analysis=EmotionalAnalysis(
                 joy=0,
                 sadness=0.15,

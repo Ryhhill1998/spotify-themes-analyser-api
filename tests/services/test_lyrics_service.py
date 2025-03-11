@@ -26,16 +26,16 @@ def lyrics_service(endpoint_requester) -> LyricsService:
 @pytest.fixture
 def mock_lyrics_requests() -> list[LyricsRequest]:
     return [
-        LyricsRequest(track_id="1", artist_name="Artist A", track_title="Song A"),
-        LyricsRequest(track_id="2", artist_name="Artist B", track_title="Song B"),
+        LyricsRequest(track_id="1", artist_name="Artist 0", track_title="Track 0"),
+        LyricsRequest(track_id="2", artist_name="Artist 1", track_title="Track 1"),
     ]
 
 
 @pytest.fixture
 def mock_response_data() -> list[dict[str, str]]:
     return [
-        {"track_id": "1", "artist_name": "Artist A", "track_title": "Song A", "lyrics": "Lyrics for Song A"},
-        {"track_id": "2", "artist_name": "Artist B", "track_title": "Song B", "lyrics": "Lyrics for Song B"},
+        {"track_id": "1", "artist_name": "Artist 0", "track_title": "Track 0", "lyrics": "Lyrics for Track 0"},
+        {"track_id": "2", "artist_name": "Artist 1", "track_title": "Track 1", "lyrics": "Lyrics for Track 1"},
     ]
 
 
@@ -91,8 +91,8 @@ async def test_get_lyrics_list_valid_response(
     """Test that get_lyrics_list correctly converts API response to LyricsResponse objects."""
 
     expected_lyrics_list = [
-        LyricsResponse(track_id="1", artist_name="Artist A", track_title="Song A", lyrics="Lyrics for Song A"),
-        LyricsResponse(track_id="2", artist_name="Artist B", track_title="Song B", lyrics="Lyrics for Song B"),
+        LyricsResponse(track_id="1", artist_name="Artist 0", track_title="Track 0", lyrics="Lyrics for Track 0"),
+        LyricsResponse(track_id="2", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
     ]
 
     endpoint_requester.post.return_value = mock_response_data
@@ -103,8 +103,8 @@ async def test_get_lyrics_list_valid_response(
     endpoint_requester.post.assert_called_once_with(
         url=f"{TEST_URL}/lyrics-list",
         json_data=[
-            {"track_id": "1", "artist_name": "Artist A", "track_title": "Song A"},
-            {"track_id": "2", "artist_name": "Artist B", "track_title": "Song B"},
+            {"track_id": "1", "artist_name": "Artist 0", "track_title": "Track 0"},
+            {"track_id": "2", "artist_name": "Artist 1", "track_title": "Track 1"},
         ],
         timeout=None
     )

@@ -25,8 +25,8 @@ def analysis_service(endpoint_requester) -> AnalysisService:
 @pytest.fixture
 def mock_analysis_requests() -> list[AnalysisRequest]:
     return [
-        AnalysisRequest(track_id="1", lyrics="Lyrics for Song A"),
-        AnalysisRequest(track_id="2", lyrics="Lyrics for Song B"),
+        AnalysisRequest(track_id="1", lyrics="Lyrics for Track 0"),
+        AnalysisRequest(track_id="2", lyrics="Lyrics for Track 1"),
     ]
 
 
@@ -35,7 +35,7 @@ def mock_response_data() -> list[dict]:
     return [
         {
             "track_id": "1",
-            "lyrics": "Lyrics for Song A",
+            "lyrics": "Lyrics for Track 0",
             "emotional_analysis": {
                 "joy": 0.2, 
                 "sadness": 0.1,
@@ -56,7 +56,7 @@ def mock_response_data() -> list[dict]:
         },
         {
             "track_id": "2",
-            "lyrics": "Lyrics for Song B",
+            "lyrics": "Lyrics for Track 1",
             "emotional_analysis": {
                 "joy": 0, 
                 "sadness": 0.15,
@@ -133,7 +133,7 @@ async def test_get_analysis_list_valid_response(
     expected_analysis_list = [
         EmotionalProfile(
             track_id="1",
-            lyrics="Lyrics for Song A",
+            lyrics="Lyrics for Track 0",
             emotional_analysis=EmotionalAnalysis(
                 joy=0.2,
                 sadness=0.1,
@@ -154,7 +154,7 @@ async def test_get_analysis_list_valid_response(
         ),
         EmotionalProfile(
             track_id="2",
-            lyrics="Lyrics for Song B",
+            lyrics="Lyrics for Track 1",
             emotional_analysis=EmotionalAnalysis(
                 joy=0,
                 sadness=0.15,
@@ -183,8 +183,8 @@ async def test_get_analysis_list_valid_response(
     endpoint_requester.post.assert_called_once_with(
         url=f"{TEST_URL}/emotional-profile",
         json_data=[
-            {"track_id": "1", "lyrics": "Lyrics for Song A"},
-            {"track_id": "2", "lyrics": "Lyrics for Song B"},
+            {"track_id": "1", "lyrics": "Lyrics for Track 0"},
+            {"track_id": "2", "lyrics": "Lyrics for Track 1"},
         ],
         timeout=None
     )

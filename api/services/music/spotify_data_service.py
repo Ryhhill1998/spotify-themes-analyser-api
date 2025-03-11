@@ -131,13 +131,6 @@ class SpotifyDataService(MusicService):
         )
         self.spotify_auth_service = spotify_auth_service
 
-
-    def _validate_type(obj, obj_name: str, expected_type: type):
-        if not isinstance(obj, expected_type):
-            raise SpotifyDataServiceException(
-                f"Expected type {expected_type} for {obj_name}. Actual type: {type(obj)}"
-            )
-
     @staticmethod
     def _create_track(data: dict) -> SpotifyTrack:
         """
@@ -155,6 +148,8 @@ class SpotifyDataService(MusicService):
 
         Raises
         -------
+        TypeError
+            If data is not a dict.
         pydantic.ValidationError
             If data validation fails.
         """
@@ -196,6 +191,8 @@ class SpotifyDataService(MusicService):
 
         Raises
         -------
+        TypeError
+            If data is not a dict.
         pydantic.ValidationError
             If data validation fails.
         """
@@ -241,6 +238,9 @@ class SpotifyDataService(MusicService):
                 return self._create_artist(data=data)
             else:
                 raise SpotifyDataServiceException(f"Invalid item_type: {item_type}")
+        except TypeError as e:
+            print(e)
+            raise SpotifyDataServiceException(f"Spotify data not of type dict. Actual type: {type(data)}")
         except pydantic.ValidationError as e:
             print(f"Failed to create TopItem from Spotify API data - {e}")
             raise SpotifyDataServiceException(

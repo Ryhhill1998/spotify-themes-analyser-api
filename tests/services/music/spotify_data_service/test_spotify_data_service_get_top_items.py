@@ -1,5 +1,3 @@
-import random
-import uuid
 from unittest.mock import AsyncMock
 
 import pytest
@@ -23,12 +21,6 @@ TEST_SCOPE = "user-top-read"
 # 3. Test get_top_items raises SpotifyDataServiceException if token refresh fails.
 # 4. Test get_top_items raises SpotifyDataServiceException if data validation fails.
 # 5. Test get_top_items returns expected response.
-# 6. Test get_item_by_id raises SpotifyDataServiceException if Spotify API request fails.
-# 7. Test get_item_by_id raises SpotifyDataServiceNotFoundException if item not found on Spotify.
-# 8. Test get_item_by_id tries to refresh tokens if API request raises unauthorised error.
-# 9. Test get_item_by_id raises SpotifyDataServiceException if token refresh fails.
-# 10. Test get_item_by_id raises SpotifyDataServiceException if data validation fails.
-# 11. Test get_item_by_id returns expected response.
 
 
 @pytest.fixture
@@ -191,6 +183,15 @@ async def test_get_top_items_token_refresh_failure(
     )
 
 
+@pytest.mark.parametrize("item_type", [ItemType.TRACKS, ItemType.ARTISTS])
+@pytest.mark.asyncio
+async def test_invalid_api_response_type(spotify_data_service, mock_endpoint_requester, mock_tokens, item_type):
+    mock_endpoint_requester.get.return_value = {"items": "invalid"}
+
+    with pytest.raises(SpotifyDataServiceException, match="Spotify data not of type dict. Actual type: <class 'str'>"):
+        await spotify_data_service.get_top_items(tokens=mock_tokens, item_type=item_type)
+
+
 # TRACKS
 @pytest.mark.parametrize(
     "missing_attr",
@@ -213,7 +214,7 @@ async def test_get_top_items_tracks_response_data_missing_fields(
 
 @pytest.mark.parametrize("none_type_attr", ["id", "name", "explicit", "duration_ms", "popularity"])
 @pytest.mark.asyncio
-async def test_get_top_items_tracks_response_data_non_type_fields(
+async def test_get_top_items_tracks_response_data_none_type_fields(
         spotify_data_service,
         mock_endpoint_requester,
         mock_tokens,
@@ -229,7 +230,7 @@ async def test_get_top_items_tracks_response_data_non_type_fields(
 
 @pytest.mark.parametrize("invalid_attr", ["external_urls", "album", "artists"])
 @pytest.mark.asyncio
-async def test_get_top_items_tracks_response_data_non_subscriptable_fields(
+async def test_get_top_items_tracks_response_data_invalid_field_types(
         spotify_data_service,
         mock_endpoint_requester,
         mock_tokens,
@@ -300,7 +301,7 @@ async def test_get_top_items_artists_response_data_missing_fields(
 
 @pytest.mark.parametrize("none_type_attr", ["id", "name"])
 @pytest.mark.asyncio
-async def test_get_top_items_artists_response_data_invalid_field_types(
+async def test_get_top_items_artists_response_data_none_type_fields(
         spotify_data_service,
         mock_endpoint_requester,
         mock_tokens,
@@ -316,7 +317,7 @@ async def test_get_top_items_artists_response_data_invalid_field_types(
 
 @pytest.mark.parametrize("invalid_attr", ["images", "external_urls"])
 @pytest.mark.asyncio
-async def test_get_top_items_artists_response_data_non_subscriptable_fields(
+async def test_get_top_items_artists_response_data_invalid_field_types(
         spotify_data_service,
         mock_endpoint_requester,
         mock_tokens,
@@ -358,44 +359,3 @@ async def test_get_top_items_artists_success(spotify_data_service, mock_endpoint
     response = await spotify_data_service.get_top_items(tokens=mock_tokens, item_type=ItemType.ARTISTS)
 
     assert response == expected_response
-
-# -------------------- GET ITEM BY ID -------------------- #
-
-# GENERIC
-@pytest.mark.asyncio
-async def test_get_item_by_id_request_failure(spotify_data_service, mock_endpoint_requester, mock_tokens):
-    mock_endpoint_requester.get.side_effect = EndpointRequesterException()
-
-    with pytest.raises(SpotifyDataServiceException, match="Request to Spotify API failed"):
-        await spotify_data_service.get_item_by_id(item_id="1", tokens=mock_tokens, item_type=ItemType.TRACKS)
-
-
-@pytest.mark.asyncio
-async def test_get_item_by_id_item_not_found(spotify_data_service):
-    pass
-
-
-@pytest.mark.asyncio
-async def test_get_item_by_id_unauthorised_request(spotify_data_service):
-    pass
-
-
-@pytest.mark.asyncio
-async def test_get_item_by_id_token_refresh_failure(spotify_data_service):
-    pass
-
-
-@pytest.mark.asyncio
-async def test_get_item_by_id_invalid_response_data(spotify_data_service):
-    pass
-
-
-@pytest.mark.asyncio
-async def test_get_item_by_id_success(spotify_data_service):
-    pass
-
-
-# TRACKS
-
-
-# ARTISTS
