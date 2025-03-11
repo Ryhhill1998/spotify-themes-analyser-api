@@ -273,8 +273,6 @@ class SpotifyDataService(MusicService):
             If creating the top item objects fails.
         EndpointRequesterUnauthorisedException
             If the Spotify API request returns a 401 Unauthorised response code.
-        EndpointRequesterNotFoundException
-            If the Spotify API request returns a 404 Not Found response code.
         EndpointRequesterException
             If the Spotify API request fails for any other reason.
         """
