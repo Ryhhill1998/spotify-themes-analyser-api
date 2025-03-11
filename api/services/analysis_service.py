@@ -1,69 +1,106 @@
-from collections import defaultdict
+import pydantic
 
-from api.models import AnalysisRequest, Emotion
-from api.services.endpoint_requester import EndpointRequester
+from api.models import AnalysisRequest, EmotionalProfile
+from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
+
+
+class AnalysisServiceException(Exception):
+    """
+    Raised when AnalysisService fails to process the API response.
+    
+    Parameters
+    ----------
+    message : str
+        The error message describing the failure.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class AnalysisServiceNotFoundException(AnalysisServiceException):
+    """
+    Exception raised when AnalysisService fails to return results for the request.
+
+    Parameters
+    ----------
+    message : str
+        The error message describing the request for which no results were found.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
 
 
 class AnalysisService:
+    """
+    A service for retrieving emotional profile analyses of track lyrics from an external API.
+
+    This service interacts with an API that provides emotional profile analyses of track lyrics.
+    It uses an `EndpointRequester` to send requests and process responses.
+
+    Attributes
+    ----------
+    base_url : str
+        The base URL of the analysis API.
+    endpoint_requester : EndpointRequester
+        The service responsible for making HTTP requests.
+
+    Methods
+    -------
+    get_emotional_profiles(analysis_requests)
+        Retrieves emotional profiles for a list of lyrics.
+    """
+    
     def __init__(self, base_url: str, endpoint_requester: EndpointRequester):
+        """
+        Initializes the AnalysisService with a base URL and an endpoint requester.
+
+        Parameters
+        ----------
+        base_url : str
+            The base URL of the analysis API.
+        endpoint_requester : EndpointRequester
+            An instance of `EndpointRequester` used to make API calls.
+        """
+        
         self.base_url = base_url
         self.endpoint_requester = endpoint_requester
 
-    @staticmethod
-    def _aggregate_emotions(emotions_data: list[dict]):
-        total_emotions = defaultdict(
-            lambda: {
-                "total": 0,
-                "max_track": {
-                    "track_id": None,
-                    "percentage": 0
-                }
-            }
-        )
+    async def get_emotional_profiles(self, analysis_requests: list[AnalysisRequest]) -> list[EmotionalProfile]:
+        """
+        Retrieves emotional profiles for a list of lyrics.
 
-        for entry in emotions_data:
-            emotional_profile = entry["emotional_profile"]
+        This method sends a POST request to the analysis API with the provided list of lyrics and returns a list of
+        `EmotionalProfile` objects containing the emotional profile of each track's lyrics.
 
-            for emotion, percentage in emotional_profile.items():
-                total_emotions[emotion]["total"] += percentage
+        Parameters
+        ----------
+        analysis_requests : list[AnalysisRequest]
+            A list of `AnalysisRequest` objects containing the track_id and lyrics for each track.
 
-                if percentage > total_emotions[emotion]["max_track"]["percentage"]:
-                    total_emotions[emotion]["max_track"] = {"track_id": entry["track_id"], "percentage": percentage}
+        Returns
+        -------
+        list[EmotionalProfile]
+            A list of `EmotionalProfile` objects containing the track_id, lyrics and emotional_analysis for each track.
 
-        return total_emotions
+        Raises
+        ------
+        AnalysisServiceException
+            If the request to the analysis API fails or the response fails validation.
+        """
 
-    @staticmethod
-    def _get_average_emotions(total_emotions: dict, result_count: int) -> list[Emotion]:
-        average_emotions = [
-            Emotion(
-                name=emotion,
-                percentage=round(info["total"] / result_count, 2),
-                track_id=track_id
+        try:
+            url = f"{self.base_url}/emotional-profile"
+
+            data = await self.endpoint_requester.post(
+                url=url,
+                json_data=[item.model_dump() for item in analysis_requests],
+                timeout=None
             )
-            for emotion, info
-            in total_emotions.items()
-            if (track_id := info["max_track"]["track_id"]) is not None
-        ]
 
-        return average_emotions
-
-    @staticmethod
-    def _get_top_emotions(emotions: list[Emotion], limit: int) -> list[Emotion]:
-        top_emotions = sorted(emotions, key=lambda e: e.percentage, reverse=True)[:limit]
-
-        return top_emotions
-
-    async def get_top_emotions(self, analysis_requests: list[AnalysisRequest], limit: int = 5):
-        url = f"{self.base_url}/emotional-profile"
-
-        data = await self.endpoint_requester.post(
-            url=url,
-            json=[item.model_dump() for item in analysis_requests],
-            timeout=None
-        )
-
-        total_emotions = self._aggregate_emotions(emotions_data=data)
-        average_emotions = self._get_average_emotions(total_emotions=total_emotions, result_count=len(data))
-        top_emotions = self._get_top_emotions(emotions=average_emotions, limit=limit)
-
-        return top_emotions
+            return [EmotionalProfile(**entry) for entry in data]
+        except pydantic.ValidationError as e:
+            raise AnalysisServiceException(f"Failed to convert API response to EmotionalProfile object: {e}")
+        except EndpointRequesterException as e:
+            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
