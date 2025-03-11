@@ -2,8 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from api.models import TokenData, SpotifyTrack, SpotifyTrackArtist, SpotifyItemsResponse, SpotifyItemImage, \
-    SpotifyArtist, SpotifyItemResponse
+from api.models import TokenData, SpotifyTrack, SpotifyTrackArtist, SpotifyItemImage, SpotifyArtist, SpotifyItemResponse
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException, \
     EndpointRequesterUnauthorisedException, EndpointRequesterNotFoundException
 from api.services.music.spotify_auth_service import SpotifyAuthService, SpotifyAuthServiceException

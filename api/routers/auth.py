@@ -1,8 +1,7 @@
 import secrets
 import urllib.parse
-from requests.exceptions import HTTPError
 
-from fastapi import Response, APIRouter, Request, HTTPException, status
+from fastapi import Response, APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
