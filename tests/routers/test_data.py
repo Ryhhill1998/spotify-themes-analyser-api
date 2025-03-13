@@ -1,42 +1,14 @@
-from typing import Callable
 from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from api.dependencies import get_spotify_auth_service, get_settings, get_spotify_data_service, get_insights_service, \
-    get_tokens_from_cookies
+from api.dependencies import get_spotify_data_service, get_insights_service, get_tokens_from_cookies
 from api.main import app
 from api.models import TokenData, SpotifyItemResponse, SpotifyItem, TopEmotionsResponse
 from api.services.insights_service import InsightsService, InsightsServiceException
-from api.services.music.spotify_auth_service import SpotifyAuthService, SpotifyAuthServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, SpotifyDataServiceNotFoundException, \
     SpotifyDataServiceException
 from api.settings import Settings
-
-# -------------------- GET ARTIST BY ID -------------------- #
-# 1. Test that /data/artists/{artist_id} returns 404 status code if Spotify artist not found.
-# 2. Test that /data/artists/{artist_id} returns 500 status code if a SpotifyDataServiceException occurs.
-# 3. Test that /data/artists/{artist_id} returns expected artist response.
-
-# -------------------- GET TRACK BY ID -------------------- #
-# 1. Test that /data/tracks/{track_id} returns 404 status code if Spotify track not found.
-# 2. Test that /data/tracks/{track_id} returns 500 status code if a SpotifyDataServiceException occurs.
-# 3. Test that /data/tracks/{track_id} returns expected track response.
-
-# -------------------- GET TOP ARTISTS -------------------- #
-# 1. Test that /data/top-artists returns 500 status code if a SpotifyDataServiceException occurs.
-# 2. Test that /data/top-artists returns expected JSON.
-# 3. Test that /data/top-artists sets response cookies.
-
-# -------------------- GET TOP TRACKS -------------------- #
-# 1. Test that /data/top-tracks returns 500 status code if a SpotifyDataServiceException occurs.
-# 2. Test that /data/top-tracks returns expected JSON.
-# 3. Test that /data/top-tracks sets response cookies.
-
-# -------------------- GET TOP EMOTIONS -------------------- #
-# 1. Test that /data/top-emotions returns 500 status code if InsightsServiceException occurs.
-# 2. Test that /data/top-emotions returns expected JSON.
-# 2. Test that /data/top-emotions sets response cookies.
 
 TEST_FRONTEND_URL = "http://test-frontend-url.com"
 MOCK_OAUTH_STATE = "12345"
