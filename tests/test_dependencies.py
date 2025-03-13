@@ -27,3 +27,11 @@ def test_get_tokens_from_cookies_unauthorised_request(mock_request, mock_cookies
         get_tokens_from_cookies(mock_request)
 
     assert e.value.status_code == 401
+
+
+def test_get_tokens_from_cookies_success(mock_request, mock_cookies):
+    mock_request.cookies = mock_cookies
+
+    tokens = get_tokens_from_cookies(mock_request)
+
+    assert tokens.access_token == mock_cookies["access_token"] and tokens.refresh_token == mock_cookies["refresh_token"]
