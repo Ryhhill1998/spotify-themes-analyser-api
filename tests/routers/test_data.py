@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from api.dependencies import get_spotify_auth_service, get_settings, get_spotify_data_service, get_insights_service
+from api.dependencies import get_spotify_auth_service, get_settings, get_spotify_data_service, get_insights_service, \
+    get_tokens_from_cookies
 from api.main import app
 from api.models import TokenData, SpotifyItemResponse, SpotifyItem, TopEmotionsResponse
 from api.services.insights_service import InsightsService, InsightsServiceException
@@ -59,16 +60,25 @@ def mock_settings() -> MagicMock:
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(app, follow_redirects=False)
+def mock_request_tokens() -> MagicMock:
+    mock = MagicMock(spec=TokenData)
+    mock.access_token = "access"
+    mock.refresh_token = "refresh"
+    return mock
 
 
 @pytest.fixture
-def mock_tokens() -> MagicMock:
+def mock_response_tokens() -> MagicMock:
     mock = MagicMock(spec=TokenData)
     mock.access_token = "new_access"
     mock.refresh_token = "new_refresh"
     return mock
+
+
+@pytest.fixture
+def client(mock_request_tokens) -> TestClient:
+    app.dependency_overrides[get_tokens_from_cookies] = lambda: mock_request_tokens
+    return TestClient(app, follow_redirects=False)
 
 
 @pytest.fixture
@@ -82,28 +92,28 @@ def mock_item_factory():
 
 
 @pytest.fixture
-def mock_item_response(mock_item_factory, mock_tokens) -> MagicMock:
+def mock_item_response(mock_item_factory, mock_response_tokens) -> MagicMock:
     mock = MagicMock(spec=SpotifyItemResponse)
     mock.data = mock_item_factory(item_id="1")
-    mock.tokens = mock_tokens
+    mock.tokens = mock_response_tokens
     return mock
 
 
 @pytest.fixture
-def mock_items_response(mock_item_factory, mock_tokens) -> MagicMock:
+def mock_items_response(mock_item_factory, mock_response_tokens) -> MagicMock:
     mock = MagicMock(spec=SpotifyItemResponse)
     mock_items = [mock_item_factory(item_id=str(i)) for i in range(1, 6)]
     mock.data = mock_items
-    mock.tokens = mock_tokens
+    mock.tokens = mock_response_tokens
     return mock
 
 
 @pytest.fixture
-def mock_emotions_response(mock_item_factory, mock_tokens) -> MagicMock:
+def mock_emotions_response(mock_item_factory, mock_response_tokens) -> MagicMock:
     mock = MagicMock(spec=TopEmotionsResponse)
     mock_emotions = [mock_item_factory(item_id=str(i)) for i in range(1, 6)]
     mock.top_emotions = mock_emotions
-    mock.tokens = mock_tokens
+    mock.tokens = mock_response_tokens
     return mock
 
 
@@ -114,8 +124,6 @@ def mock_emotions_response(mock_item_factory, mock_tokens) -> MagicMock:
 def test_get_artist_by_id_404(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_item_by_id.side_effect = SpotifyDataServiceNotFoundException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/artists/1")
 
@@ -125,8 +133,6 @@ def test_get_artist_by_id_404(client, mock_spotify_data_service):
 def test_get_artist_by_id_500(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_item_by_id.side_effect = SpotifyDataServiceException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/artists/1")
 
@@ -136,8 +142,6 @@ def test_get_artist_by_id_500(client, mock_spotify_data_service):
 def test_get_artist_by_id_success(client, mock_spotify_data_service, mock_item_response):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_item_by_id.return_value = mock_item_response
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/artists/1")
 
@@ -157,8 +161,6 @@ def test_get_artist_by_id_success(client, mock_spotify_data_service, mock_item_r
 def test_get_track_by_id_404(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_item_by_id.side_effect = SpotifyDataServiceNotFoundException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/tracks/1")
 
@@ -168,8 +170,6 @@ def test_get_track_by_id_404(client, mock_spotify_data_service):
 def test_get_track_by_id_500(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_item_by_id.side_effect = SpotifyDataServiceException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/tracks/1")
 
@@ -179,8 +179,6 @@ def test_get_track_by_id_500(client, mock_spotify_data_service):
 def test_get_track_by_id_success(client, mock_spotify_data_service, mock_item_response):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_item_by_id.return_value = mock_item_response
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/tracks/1")
 
@@ -199,8 +197,6 @@ def test_get_track_by_id_success(client, mock_spotify_data_service, mock_item_re
 def test_get_top_artists_500(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_top_items.side_effect = SpotifyDataServiceException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-artists")
 
@@ -210,8 +206,6 @@ def test_get_top_artists_500(client, mock_spotify_data_service):
 def test_get_top_artists_success(client, mock_spotify_data_service, mock_items_response):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_top_items.return_value = mock_items_response
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-artists")
 
@@ -231,8 +225,6 @@ def test_get_top_artists_success(client, mock_spotify_data_service, mock_items_r
 def test_get_top_tracks_500(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_top_items.side_effect = SpotifyDataServiceException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-tracks")
 
@@ -242,8 +234,6 @@ def test_get_top_tracks_500(client, mock_spotify_data_service):
 def test_get_top_tracks_success(client, mock_spotify_data_service, mock_items_response):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
     mock_spotify_data_service.get_top_items.return_value = mock_items_response
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-tracks")
 
@@ -272,8 +262,6 @@ def test_get_top_emotions_500(client, mock_insights_service, mock_emotions_respo
 def test_get_top_emotions_success(client, mock_insights_service, mock_emotions_response):
     app.dependency_overrides[get_insights_service] = lambda: mock_insights_service
     mock_insights_service.get_top_emotions.return_value = mock_emotions_response
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-emotions")
 
