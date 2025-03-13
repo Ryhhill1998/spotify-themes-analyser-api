@@ -69,10 +69,10 @@ async def get_item_response(
     """
 
     try:
-        top_item_response = await spotify_data_service.get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
-        tokens = top_item_response.tokens
+        item_response = await spotify_data_service.get_item_by_id(item_id=item_id, tokens=tokens, item_type=item_type)
+        tokens = item_response.tokens
 
-        response_content = top_item_response.data.model_dump()
+        response_content = item_response.data.model_dump()
         response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
 
         return response

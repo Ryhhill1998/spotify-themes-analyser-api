@@ -1,14 +1,12 @@
 from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
-from httpx import Headers
 
 from api.dependencies import get_spotify_auth_service, get_settings
 from api.main import app
 from api.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthService, SpotifyAuthServiceException
 from api.settings import Settings
-
 
 # 1. Test that /auth/spotify/login returns expected redirect response.
 # 2. Test that /auth/spotify/callback returns error response if request cannot be authenticated.
@@ -32,7 +30,7 @@ def mock_settings() -> MagicMock:
 
 
 @pytest.fixture
-def client(mock_spotify_auth_service) -> TestClient:
+def client() -> TestClient:
     return TestClient(app, follow_redirects=False)
 
 
