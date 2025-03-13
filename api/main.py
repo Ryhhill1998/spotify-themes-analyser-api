@@ -25,6 +25,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
+# healthcheck route
+@app.get("/")
+def health_check():
+    return {"status": "running"}
+
+
 app.include_router(auth.router)
 app.include_router(data.router)
 

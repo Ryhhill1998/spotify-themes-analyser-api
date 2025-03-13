@@ -27,7 +27,7 @@ def get_tokens_from_cookies(request: Request) -> TokenData:
     refresh_token = cookies.get("refresh_token")
 
     if not access_token or not refresh_token:
-        raise HTTPException(status_code=400, detail="Requests must include an access token and a refresh token.")
+        raise HTTPException(status_code=401, detail="Requests must include an access token and a refresh token.")
 
     return TokenData(access_token=access_token, refresh_token=refresh_token)
 
