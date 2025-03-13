@@ -196,15 +196,15 @@ def test_get_track_by_id_success(client, mock_spotify_data_service, mock_item_re
 # -------------------- GET TOP ARTISTS -------------------- #
 # 1. Test that /data/top-artists returns 500 status code if a SpotifyDataServiceException occurs.
 # 2. Test that /data/top-artists returns expected response.
-def test_get_top_artists_500(client, mock_spotify_data_service, mock_items_response):
+def test_get_top_artists_500(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
-    mock_spotify_data_service.get_top_items.return_value = mock_items_response
+    mock_spotify_data_service.get_top_items.side_effect = SpotifyDataServiceException("Test")
     client.cookies.set("access_token", "access")
     client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-artists")
 
-    assert res.status_code == 200 and res.json() == [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"}, {"id": "5"}]
+    assert res.status_code == 500 and "Something went wrong." in res.text
 
 
 def test_get_top_artists_success(client, mock_spotify_data_service, mock_items_response):
@@ -228,15 +228,15 @@ def test_get_top_artists_success(client, mock_spotify_data_service, mock_items_r
 # 1. Test that /data/top-tracks returns 500 status code if a SpotifyDataServiceException occurs.
 # 2. Test that /data/top-tracks returns expected JSON.
 # 3. Test that /data/top-tracks sets response cookies.
-def test_get_top_tracks_500(client, mock_spotify_data_service, mock_items_response):
+def test_get_top_tracks_500(client, mock_spotify_data_service):
     app.dependency_overrides[get_spotify_data_service] = lambda: mock_spotify_data_service
-    mock_spotify_data_service.get_top_items.return_value = mock_items_response
+    mock_spotify_data_service.get_top_items.side_effect = SpotifyDataServiceException("Test")
     client.cookies.set("access_token", "access")
     client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-tracks")
 
-    assert res.status_code == 200 and res.json() == [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"}, {"id": "5"}]
+    assert res.status_code == 500 and "Something went wrong." in res.text
 
 
 def test_get_top_tracks_success(client, mock_spotify_data_service, mock_items_response):
