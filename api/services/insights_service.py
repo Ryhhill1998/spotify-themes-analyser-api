@@ -293,6 +293,6 @@ class InsightsService:
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
             print(e)
             raise InsightsServiceException(f"Service failure - {e}")
-        except pydantic.ValidationError as e:
+        except (pydantic.ValidationError, AttributeError) as e:
             print(e)
             raise InsightsServiceException(f"Data validation failure - {e}")

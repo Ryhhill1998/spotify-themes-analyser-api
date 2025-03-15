@@ -354,7 +354,7 @@ class Emotion(Enum):
 
 
 class EmotionalTagsRequest(AnalysisRequestBase):
-    emotion: str
+    emotion: Emotion
 
 
 class EmotionalTagsResponse(EmotionalTagsRequest):

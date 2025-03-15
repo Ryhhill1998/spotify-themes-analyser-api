@@ -346,8 +346,7 @@ async def test_get_top_emotions_returns_expected_response(
         TopEmotion(name="joy", percentage=0.1, track_id="1")
     ]
 
-    expected_response = TopEmotionsResponse(top_emotions=top_emotions[:limit], tokens=mock_spotify_data.tokens)
-
     response = await insights_service.get_top_emotions(tokens=mock_tokens, limit=limit)
 
+    expected_response = TopEmotionsResponse(top_emotions=top_emotions[:limit], tokens=mock_spotify_data.tokens)
     assert response == expected_response
