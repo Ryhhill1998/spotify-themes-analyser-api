@@ -159,7 +159,23 @@ class AnalysisService:
             print(e)
             raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
 
-    async def get_emotional_profiles_list(self, requests: list[EmotionalProfileRequest]) -> list[EmotionalProfileResponse]:
+    def _create_emotional_profile_tasks(self, requests: list[EmotionalProfileRequest]):
+        """
+        Creates a list of coroutines for retrieving emotional profiles.
+
+        Parameters
+        ----------
+        requests : list[EmotionalProfileRequest]
+            A list of emotional profile requests.
+
+        Returns
+        -------
+        list[asyncio.Task]
+            A list of tasks that can be awaited.
+        """
+        return [self.get_emotional_profile(req) for req in requests]
+
+    async def get_emotional_profiles(self, requests: list[EmotionalProfileRequest]) -> list[EmotionalProfileResponse]:
         """
         Retrieves emotional profiles for multiple tracks asynchronously.
 
@@ -181,7 +197,7 @@ class AnalysisService:
         - If some requests fail, only successful responses will be returned.
         """
 
-        tasks = [self.get_emotional_profile(req) for req in requests]
+        tasks = self._create_emotional_profile_tasks(requests)
         emotional_profiles = await asyncio.gather(*tasks, return_exceptions=True)
         successful_results = [item for item in emotional_profiles if isinstance(item, EmotionalProfileResponse)]
 

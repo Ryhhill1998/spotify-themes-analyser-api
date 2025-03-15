@@ -86,7 +86,7 @@ async def test_get_analysis_list_empty_response(analysis_service, endpoint_reque
     # API returns empty list
     endpoint_requester.post.return_value = []
 
-    emotional_profiles = await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
+    emotional_profiles = await analysis_service.get_emotional_profiles(mock_analysis_requests)
 
     assert emotional_profiles == []
 
@@ -108,7 +108,7 @@ async def test_get_analysis_list_invalid_response(
     endpoint_requester.post.return_value = mock_response_data
 
     with pytest.raises(AnalysisServiceException, match="Failed to convert API response to EmotionalProfile object"):
-        await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
+        await analysis_service.get_emotional_profiles(mock_analysis_requests)
 
 
 @pytest.mark.asyncio
@@ -118,7 +118,7 @@ async def test_get_analysis_list_api_request_failure(analysis_service, endpoint_
     endpoint_requester.post.side_effect = EndpointRequesterException()
 
     with pytest.raises(AnalysisServiceException, match="Request to Analysis API failed"):
-        await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
+        await analysis_service.get_emotional_profiles(mock_analysis_requests)
 
 
 @pytest.mark.asyncio
@@ -177,7 +177,7 @@ async def test_get_analysis_list_valid_response(
 
     endpoint_requester.post.return_value = mock_response_data
 
-    analysis_list = await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
+    analysis_list = await analysis_service.get_emotional_profiles(mock_analysis_requests)
 
     assert analysis_list == expected_analysis_list
     endpoint_requester.post.assert_called_once_with(

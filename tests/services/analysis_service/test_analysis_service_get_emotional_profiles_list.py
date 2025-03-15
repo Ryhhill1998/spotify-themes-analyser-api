@@ -1,16 +1,18 @@
-from unittest.mock import AsyncMock
+import asyncio
+import unittest.mock
+from unittest.mock import AsyncMock, MagicMock
 import pytest
 from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
-from api.services.analysis_service import AnalysisService
+from api.services.endpoint_requester import EndpointRequester
+from api.services.analysis_service import AnalysisService, AnalysisServiceException
 
 TEST_URL = "http://test-url.com"
 
 
-# 1. Test that get_emotional_profiles raises AnalysisServiceNotFoundException if data == []
-# 2. Test that get_emotional_profiles raises AnalysisServiceException if data validation fails.
-# 3. Test that get_emotional_profiles raises AnalysisServiceException if API request fails.
-# 4. Test that get_emotional_profiles returns a list of EmotionalProfile objects if API response is valid.
+# 1. Test that get_emotional_profiles returns [] if all get_emotional_profile tasks raise an AnalysisServiceException.
+# 2. Test that get_emotional_profiles does not return an item if the get_emotional_profile task raises an AnalysisServiceException.
+# 3. Test that get_emotional_profile is called X times - where X is the number of requests.
+# 4. Test that get_emotional_profile returns expected results.
 
 
 @pytest.fixture
@@ -24,99 +26,87 @@ def analysis_service(mock_endpoint_requester) -> AnalysisService:
 
 
 @pytest.fixture
-def mock_emotional_profile_requests() -> list[EmotionalProfileRequest]:
-    return [
-        EmotionalProfileRequest(track_id="1", lyrics="Lyrics for Track 1"),
-        EmotionalProfileRequest(track_id="2", lyrics="Lyrics for Track 2"),
-    ]
+def mock_request_factory():
+    def _create(track_id: str) -> EmotionalProfileRequest:
+        return EmotionalProfileRequest(track_id=track_id, lyrics=f"Lyrics for Track {track_id}")
+
+    return _create
 
 
 @pytest.fixture
-def mock_emotional_profiles_list_response() -> dict:
-    return {
-        "track_id": "1",
-        "lyrics": "Lyrics for Track 1",
-        "emotional_profile": {
-            "joy": 0.2,
-            "sadness": 0.1,
-            "anger": 0.05,
-            "fear": 0,
-            "love": 0,
-            "hope": 0.05,
-            "nostalgia": 0.04,
-            "loneliness": 0.02,
-            "confidence": 0.02,
-            "despair": 0,
-            "excitement": 0.01,
-            "mystery": 0.01,
-            "defiance": 0.2,
-            "gratitude": 0.15,
-            "spirituality": 0.15
-        }
-    }
+def mock_emotional_profile():
+    return EmotionalProfile(
+        joy=0.2,
+        sadness=0.1,
+        anger=0.05,
+        fear=0,
+        love=0,
+        hope=0.05,
+        nostalgia=0.04,
+        loneliness=0.02,
+        confidence=0.02,
+        despair=0,
+        excitement=0.01,
+        mystery=0.01,
+        defiance=0.2,
+        gratitude=0.15,
+        spirituality=0.15
+    )
+
+
+@pytest.fixture
+def mock_response_factory(mock_emotional_profile):
+    def _create(track_id: str) -> EmotionalProfileResponse:
+        return EmotionalProfileResponse(
+            track_id=track_id,
+            lyrics=f"Lyrics for Track {track_id}",
+            emotional_profile=mock_emotional_profile
+        )
+
+    return _create
 
 
 @pytest.mark.asyncio
-async def test_get_emotional_profiles_list_empty_response(
-        analysis_service,
-        mock_endpoint_requester,
-        mock_emotional_profile_requests
-):
-    """Test that an empty API response returns an empty list."""
+async def test_get_emotional_profiles_all_failures(analysis_service, mock_request_factory):
+    analysis_service.get_emotional_profile = AsyncMock(side_effect=AnalysisServiceException)
+    mock_requests = [mock_request_factory(str(i)) for i in range(1, 6)]
 
-    # API returns empty list
-    mock_endpoint_requester.post.return_value = []
-
-    emotional_profiles = await analysis_service.get_emotional_profiles_list(mock_emotional_profile_requests)
-
-    assert emotional_profiles == []
-
-
-@pytest.mark.parametrize("missing_field", ["track_id", "lyrics", "emotional_profile"])
-@pytest.mark.asyncio
-async def test_get_emotional_profiles_list_invalid_response(
-        analysis_service,
-        mock_endpoint_requester,
-        mock_emotional_profile_requests,
-        mock_emotional_profiles_list_response,
-        missing_field
-):
-    """Test that invalid API response structure is not returned in results."""
-
-    # remove missing_field key from mock_response_data to simulate invalid API response
-    mock_emotional_profiles_list_response.pop(missing_field)
-    mock_endpoint_requester.post.return_value = mock_emotional_profiles_list_response
-
-    res = await analysis_service.get_emotional_profiles_list(mock_emotional_profile_requests)
+    res = await analysis_service.get_emotional_profiles(mock_requests)
 
     assert res == []
 
 
+@pytest.mark.parametrize("exception_indices", [[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]])
 @pytest.mark.asyncio
-async def test_get_emotional_profiles_list_api_request_failure(
+async def test_get_emotional_profiles_returns_expected_response(
         analysis_service,
-        mock_endpoint_requester,
-        mock_emotional_profile_requests
+        mock_request_factory,
+        mock_response_factory,
+        exception_indices
 ):
-    """Test that an empty API response raises a AnalysisServiceException."""
+    # ARRANGE
+    mock_requests = [mock_request_factory(str(i)) for i in range(1, 4)]
+    mock_task_list = [asyncio.Future(), asyncio.Future(), asyncio.Future()]
+    analysis_service._create_emotional_profile_tasks = MagicMock(return_value=mock_task_list)
 
-    mock_endpoint_requester.post.side_effect = EndpointRequesterException()
+    mock_exception = AnalysisServiceException("Test")
+    mock_responses = [mock_response_factory(str(i)) for i in range(1, 4)]
+    for index in exception_indices:
+        mock_responses[index] = mock_exception
 
-    res = await analysis_service.get_emotional_profiles_list(mock_emotional_profile_requests)
+    for index, response in enumerate(mock_responses):
+        future_return_value = mock_task_list[index]
 
-    assert res == []
+        if isinstance(response, Exception):
+            future_return_value.set_exception(response)
+        else:
+            future_return_value.set_result(response)
 
+    # ACT
+    res = await analysis_service.get_emotional_profiles(mock_requests)
 
-@pytest.mark.asyncio
-async def test_get_emotional_profiles_list_valid_response(
-        analysis_service,
-        mock_endpoint_requester,
-        mock_emotional_profile_requests,
-        mock_emotional_profiles_list_response
-):
-    """Test that get_analysis_list correctly converts API response to AnalysisResponse objects."""
-
-    expected_analysis_list = [
+    # ASSERT
+    full_response = [
         EmotionalProfileResponse(
             track_id="1",
             lyrics="Lyrics for Track 1",
@@ -139,8 +129,29 @@ async def test_get_emotional_profiles_list_valid_response(
             )
         ),
         EmotionalProfileResponse(
-            track_id="1",
-            lyrics="Lyrics for Track 1",
+            track_id="2",
+            lyrics="Lyrics for Track 2",
+            emotional_profile=EmotionalProfile(
+                joy=0.2,
+                sadness=0.1,
+                anger=0.05,
+                fear=0,
+                love=0,
+                hope=0.05,
+                nostalgia=0.04,
+                loneliness=0.02,
+                confidence=0.02,
+                despair=0,
+                excitement=0.01,
+                mystery=0.01,
+                defiance=0.2,
+                gratitude=0.15,
+                spirituality=0.15
+            )
+        ),
+        EmotionalProfileResponse(
+            track_id="3",
+            lyrics="Lyrics for Track 3",
             emotional_profile=EmotionalProfile(
                 joy=0.2,
                 sadness=0.1,
@@ -160,9 +171,23 @@ async def test_get_emotional_profiles_list_valid_response(
             )
         )
     ]
+    exception_indices_set = set(exception_indices)
+    expected_response = [res for index, res in enumerate(full_response) if index not in exception_indices_set]
+    assert res == expected_response
 
-    mock_endpoint_requester.post.return_value = mock_emotional_profiles_list_response
 
-    analysis_list = await analysis_service.get_emotional_profiles_list(mock_emotional_profile_requests)
+@pytest.mark.asyncio
+async def test_get_emotional_profiles_calls_get_emotional_profile_expected_times(
+        analysis_service,
+        mock_request_factory,
+mock_response_factory
+):
+    mock_requests = [mock_request_factory(str(i)) for i in range(1, 6)]
+    mock_response = [mock_response_factory(str(i)) for i in range(1)].pop()
+    task = asyncio.Future()
+    task.set_result(mock_response)
+    analysis_service.get_emotional_profile = MagicMock(return_value=task)
 
-    assert analysis_list == expected_analysis_list and mock_endpoint_requester.post.call_count == 2
+    await analysis_service.get_emotional_profiles(mock_requests)
+
+    assert analysis_service.get_emotional_profile.call_count == len(mock_requests)

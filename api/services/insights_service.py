@@ -217,7 +217,7 @@ class InsightsService:
                 in lyrics_list
             ]
 
-            emotional_analyses = await self.analysis_service.get_emotional_profiles_list(emotional_profile_requests)
+            emotional_analyses = await self.analysis_service.get_emotional_profiles(emotional_profile_requests)
             self._check_data_not_empty(data=emotional_analyses, label="emotional analyses")
 
             total_emotions = self._aggregate_emotions(emotional_analyses)
