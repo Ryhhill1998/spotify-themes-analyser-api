@@ -36,10 +36,9 @@ class AnalysisServiceNotFoundException(AnalysisServiceException):
 
 class AnalysisService:
     """
-    A service for retrieving emotional profile analyses of track lyrics from an external API.
+    A service for interacting with the analysis API to retrieve emotional tags and emotional profiles of lyrics.
 
-    This service interacts with an API that provides emotional profile analyses of track lyrics.
-    It uses an `EndpointRequester` to send requests and process responses.
+    This class provides methods to analyze lyrics by making API calls and processing responses into structured objects.
 
     Attributes
     ----------
@@ -50,8 +49,12 @@ class AnalysisService:
 
     Methods
     -------
+    get_emotional_tags(request)
+        Retrieves emotional tags for the given lyrics.
+    get_emotional_profile(request)
+        Retrieves the emotional profile of a track’s lyrics.
     get_emotional_profiles_list(requests)
-        Retrieves emotional profiles for a list of lyrics.
+        Retrieves emotional profiles for multiple tracks asynchronously.
     """
     
     def __init__(self, base_url: str, endpoint_requester: EndpointRequester):
@@ -70,6 +73,28 @@ class AnalysisService:
         self.endpoint_requester = endpoint_requester
 
     async def get_emotional_tags(self, request: EmotionalTagsRequest) -> EmotionalTagsResponse:
+        """
+        Retrieves emotional tags associated with a track's lyrics.
+
+        This method sends a POST request to the analysis API with the provided lyrics
+        and returns an `EmotionalTagsResponse` containing emotional tags.
+
+        Parameters
+        ----------
+        request : EmotionalTagsRequest
+            The `EmotionalTagsRequest` object containing the lyrics for emotional tagging.
+
+        Returns
+        -------
+        EmotionalTagsResponse
+            An object containing the extracted emotional tags.
+
+        Raises
+        ------
+        AnalysisServiceException
+            If the request to the analysis API fails or the response fails validation.
+        """
+
         try:
             url = f"{self.base_url}/emotional-tags"
 
@@ -90,6 +115,28 @@ class AnalysisService:
             raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
 
     async def get_emotional_profile(self, request: EmotionalProfileRequest) -> EmotionalProfileResponse:
+        """
+        Retrieves an emotional profile of a track's lyrics.
+
+        This method sends a POST request to the analysis API with the provided track_id and lyrics and returns an
+        `EmotionalProfileResponse` object containing the track_id, lyrics, and emotional_profile of the track.
+
+        Parameters
+        ----------
+        request : EmotionalProfileRequest
+            The `EmotionalProfileRequest` object containing the track_id and lyrics.
+
+        Returns
+        -------
+        EmotionalProfileResponse
+            An `EmotionalProfileResponse` object containing the track_id, lyrics, and emotional_analysis.
+
+        Raises
+        ------
+        AnalysisServiceException
+            If the request to the analysis API fails or the response fails validation.
+        """
+
         try:
             url = f"{self.base_url}/emotional-profile"
 
@@ -111,25 +158,25 @@ class AnalysisService:
 
     async def get_emotional_profiles_list(self, requests: list[EmotionalProfileRequest]) -> list[EmotionalProfileResponse]:
         """
-        Retrieves emotional profiles for a list of lyrics.
+        Retrieves emotional profiles for multiple tracks asynchronously.
 
-        This method sends a POST request to the analysis API with the provided list of lyrics and returns a list of
-        `EmotionalProfile` objects containing the emotional profile of each track's lyrics.
+        This method sends multiple POST requests concurrently to fetch emotional profiles
+        for a batch of tracks.
 
         Parameters
         ----------
         requests : list[EmotionalProfileRequest]
-            A list of `AnalysisRequest` objects containing the track_id and lyrics for each track.
+            A list of `EmotionalProfileRequest` objects containing track_ids and lyrics.
 
         Returns
         -------
         list[EmotionalProfileResponse]
-            A list of `EmotionalProfile` objects containing the track_id, lyrics and emotional_analysis for each track.
+            A list of `EmotionalProfileResponse` objects containing emotional analyses.
 
-        Raises
-        ------
-        AnalysisServiceException
-            If the request to the analysis API fails or the response fails validation.
+        Notes
+        -----
+        - This method uses asyncio.gather() to perform concurrent requests.
+        - If some requests fail, only successful responses will be returned.
         """
 
         tasks = [self.get_emotional_profile(req) for req in requests]
