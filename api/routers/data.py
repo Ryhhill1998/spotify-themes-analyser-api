@@ -321,26 +321,26 @@ async def get_top_emotions(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong.")
 
 
-@router.get("/tracks/{track_id}/lyrics/emotional-tags/{emotion}")
+@router.get("/tracks/{track_id}/lyrics/emotions/{emotion}")
 async def get_track_lyrics_emotional_tags(
         track_id: str,
         emotion: Emotion,
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency,
-        lyrics_service: LyricsServiceDependency,
-        analysis_service: AnalysisServiceDependency
+        insights_service: InsightsServiceDependency
 ) -> JSONResponse:
     """
     Retrieves the user's top emotional responses based on their music listening history.
 
     Parameters
     ----------
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
     track_id : str
         The ID of the track being requested.
-    spotify_data_service : SpotifyDataServiceDependency
-        Dependency for analyzing and retrieving the top emotions in the user's Spotify listening history.
+    tokens : TokenCookieExtractionDependency
+        Dependency that extracts tokens from cookies.
+    emotion : Emotion
+        The emotion requested to tag the lyrics with.
+    insights_service : InsightsServiceDependency
+        Dependency for generating lyrics tagged with the requested emotion.
 
     Returns
     -------
@@ -355,23 +355,17 @@ async def get_track_lyrics_emotional_tags(
     """
 
     try:
-        track_response = await spotify_data_service.get_item_by_id(
-            item_id=track_id,
-            tokens=tokens,
-            item_type=ItemType.TRACKS
+        tagged_lyrics_response = await insights_service.tag_lyrics_with_emotion(
+            track_id=track_id,
+            emotion=emotion,
+            tokens=tokens
         )
-        track = track_response.data
-        tokens = track_response.tokens
 
-        lyrics_request = LyricsRequest(track_id=track_id, artist_name=track.artist.name, track_title=track.name)
-        lyrics_response = await lyrics_service.get_lyrics(lyrics_request)
-
-        emotional_tags_request = EmotionalTagsRequest(track_id=track_id, emotion=emotion.value, lyrics=lyrics_response.lyrics)
-        emotional_tags = await analysis_service.get_emotional_tags(emotional_tags_request)
-        print(emotional_tags.lyrics)
-
-        response_content = emotional_tags.model_dump()
-        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+        response_content = tagged_lyrics_response.lyrics_data.model_dump()
+        response = create_json_response_and_set_token_cookies(
+            content=response_content,
+            tokens=tagged_lyrics_response.tokens
+        )
 
         return response
     except InsightsServiceException:

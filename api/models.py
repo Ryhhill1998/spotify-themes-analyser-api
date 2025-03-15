@@ -359,3 +359,8 @@ class EmotionalTagsRequest(AnalysisRequestBase):
 
 class EmotionalTagsResponse(EmotionalTagsRequest):
     pass
+
+
+class TaggedLyricsResponse(BaseModel):
+    lyrics_data: EmotionalTagsResponse
+    tokens: TokenData

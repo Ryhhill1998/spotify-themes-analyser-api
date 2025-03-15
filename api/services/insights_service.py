@@ -3,7 +3,7 @@ from collections import defaultdict
 import pydantic
 
 from api.models import TokenData, LyricsRequest, TopEmotionsResponse, TopEmotion, EmotionalProfileResponse, \
-    EmotionalProfileRequest
+    EmotionalProfileRequest, EmotionalTagsRequest, Emotion, TaggedLyricsResponse
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException
@@ -235,5 +235,64 @@ class InsightsService:
             print(e)
             raise InsightsServiceException(f"Service failure - {e}")
         except (pydantic.ValidationError, AttributeError) as e:
+            print(e)
+            raise InsightsServiceException(f"Data validation failure - {e}")
+
+    async def tag_lyrics_with_emotion(
+            self,
+            track_id: str,
+            emotion: Emotion,
+            tokens: TokenData
+    ) -> TaggedLyricsResponse:
+        """
+        Retrieves emotional tags for a given track's lyrics based on the specified emotion.
+
+        Parameters
+        ----------
+        track_id : str
+            The ID of the track being analyzed.
+        emotion : Emotion
+            The emotion for which tagged lyrics are requested.
+        tokens : TokenData
+            The authentication tokens required for API access.
+
+        Returns
+        -------
+        EmotionalTagsResponse
+            A response object containing the emotional tags and updated tokens.
+
+        Raises
+        ------
+        InsightsServiceException
+            If any step of the retrieval process fails.
+        """
+
+        try:
+            # Fetch track details
+            track_response = await self.spotify_data_service.get_item_by_id(
+                item_id=track_id,
+                tokens=tokens,
+                item_type=ItemType.TRACKS
+            )
+            track = track_response.data
+            tokens = track_response.tokens
+
+            # Fetch lyrics
+            lyrics_request = LyricsRequest(track_id=track_id, artist_name=track.artist.name, track_title=track.name)
+            lyrics_response = await self.lyrics_service.get_lyrics(lyrics_request)
+
+            # Fetch emotional tags
+            emotional_tags_request = EmotionalTagsRequest(
+                track_id=track_id,
+                emotion=emotion.value,
+                lyrics=lyrics_response.lyrics
+            )
+            emotional_tags_response = await self.analysis_service.get_emotional_tags(emotional_tags_request)
+
+            return TaggedLyricsResponse(lyrics_data=emotional_tags_response, tokens=tokens)
+        except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
+            print(e)
+            raise InsightsServiceException(f"Service failure - {e}")
+        except pydantic.ValidationError as e:
             print(e)
             raise InsightsServiceException(f"Data validation failure - {e}")
