@@ -111,6 +111,22 @@ class LyricsService:
         except EndpointRequesterException as e:
             raise LyricsServiceException(f"Request to Lyrics API failed - {e}")
 
+    def _create_lyrics_tasks(self, requests: list[LyricsRequest]):
+        """
+        Creates a list of coroutines for retrieving lyrics.
+
+        Parameters
+        ----------
+        requests : list[LyricsRequest]
+            A list of lyrics requests.
+
+        Returns
+        -------
+        list[asyncio.Task]
+            A list of tasks that can be awaited.
+        """
+        return [self.get_lyrics(req) for req in requests]
+
     async def get_lyrics_list(self, lyrics_requests: list[LyricsRequest]) -> list[LyricsResponse]:
         """
         Retrieves lyrics for a multiple tracks asynchronously.
@@ -134,7 +150,7 @@ class LyricsService:
         - If some requests fail, only successful responses will be returned.
         """
 
-        tasks = [self.get_lyrics(req) for req in lyrics_requests]
+        tasks = self._create_lyrics_tasks(lyrics_requests)
         lyrics_list = await asyncio.gather(*tasks, return_exceptions=True)
         successful_results = [item for item in lyrics_list if isinstance(item, LyricsResponse)]
 

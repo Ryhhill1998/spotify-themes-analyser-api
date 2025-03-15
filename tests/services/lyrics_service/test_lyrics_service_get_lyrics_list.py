@@ -1,4 +1,5 @@
-from unittest.mock import AsyncMock
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
 import pytest
 from api.models import LyricsRequest, LyricsResponse
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
@@ -6,10 +7,9 @@ from api.services.lyrics_service import LyricsService, LyricsServiceException
 
 TEST_URL = "http://test-url.com"
 
-# 1. Test that get_lyrics_list raises LyricsServiceNotFoundException if data == []
-# 2. Test that get_lyrics_list raises LyricsServiceException if data validation fails.
-# 3. Test that get_lyrics_list raises LyricsServiceException if API request fails.
-# 4. Test that get_lyrics_list returns a list of LyricsResponse objects if API response is valid.
+# 1. Test that get_lyrics_list returns [] if all get_lyrics tasks raise a LyricsServiceException.
+# 2. Test that get_lyrics_list returns expected response.
+# 3. Test that get_lyrics_list calls get_lyrics expected number of times.
 
 
 @pytest.fixture
@@ -23,88 +23,104 @@ def lyrics_service(mock_endpoint_requester) -> LyricsService:
 
 
 @pytest.fixture
-def mock_lyrics_requests() -> list[LyricsRequest]:
-    return [
-        LyricsRequest(track_id="1", artist_name="Artist 1", track_title="Track 1"),
-        LyricsRequest(track_id="2", artist_name="Artist 2", track_title="Track 2"),
-    ]
+def mock_request_factory():
+    def _create(track_id: str) -> LyricsRequest:
+        return LyricsRequest(track_id=track_id, artist_name=f"Artist {track_id}", track_title=f"Track {track_id}")
+
+    return _create
 
 
 @pytest.fixture
-def mock_response_data() -> list[dict[str, str]]:
-    return [
-        {"track_id": "1", "artist_name": "Artist 1", "track_title": "Track 1", "lyrics": "Lyrics for Track 1"},
-        {"track_id": "2", "artist_name": "Artist 2", "track_title": "Track 2", "lyrics": "Lyrics for Track 2"},
-    ]
+def mock_response_factory():
+    def _create(track_id: str) -> LyricsResponse:
+        return LyricsResponse(
+            track_id=track_id,
+            artist_name=f"Artist {track_id}",
+            track_title=f"Track {track_id}",
+            lyrics=f"Lyrics for Track {track_id}"
+        )
 
+    return _create
 
 
 @pytest.mark.asyncio
-async def test_get_lyrics_list_empty_response(lyrics_service, endpoint_requester, mock_lyrics_requests):
-    """Test that an empty API response returns an empty list."""
+async def test_get_lyrics_list_all_failures(lyrics_service, mock_request_factory):
+    lyrics_service.get_lyrics = AsyncMock(side_effect=LyricsServiceException)
+    mock_requests = [mock_request_factory(str(i)) for i in range(1, 6)]
 
-    # API returns empty list
-    endpoint_requester.post.return_value = []
+    res = await lyrics_service.get_lyrics_list(mock_requests)
 
-    lyrics_list = await lyrics_service.get_lyrics_list(mock_lyrics_requests)
-
-    assert lyrics_list == []
+    assert res == []
 
 
-@pytest.mark.parametrize("missing_field", ["track_id", "artist_name", "track_title", "lyrics"])
+@pytest.mark.parametrize("exception_indices", [[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]])
 @pytest.mark.asyncio
-async def test_get_lyrics_list_invalid_response(
+async def test_get_lyrics_list_returns_expected_response(
         lyrics_service,
-        endpoint_requester,
-        mock_lyrics_requests,
-        mock_response_data,
-        missing_field
+        mock_request_factory,
+        mock_response_factory,
+        exception_indices
 ):
-    """Test that invalid API response structure raises LyricsServiceException."""
+    # ARRANGE
+    mock_requests = [mock_request_factory(str(i)) for i in range(1, 4)]
+    mock_task_list = [asyncio.Future(), asyncio.Future(), asyncio.Future()]
+    lyrics_service._create_lyrics_tasks = MagicMock(return_value=mock_task_list)
 
-    # remove missing_field key from mock_response_data to simulate invalid API response
-    mock_response_data[0].pop(missing_field)
+    mock_exception = LyricsServiceException("Test")
+    mock_responses = [mock_response_factory(str(i)) for i in range(1, 4)]
+    for index in exception_indices:
+        mock_responses[index] = mock_exception
 
-    endpoint_requester.post.return_value = mock_response_data
+    for index, response in enumerate(mock_responses):
+        future_return_value = mock_task_list[index]
 
-    with pytest.raises(LyricsServiceException, match="Failed to convert API response to LyricsResponse object"):
-        await lyrics_service.get_lyrics_list(mock_lyrics_requests)
+        if isinstance(response, Exception):
+            future_return_value.set_exception(response)
+        else:
+            future_return_value.set_result(response)
 
+    # ACT
+    res = await lyrics_service.get_lyrics_list(mock_requests)
 
-@pytest.mark.asyncio
-async def test_get_lyrics_list_api_request_failure(lyrics_service, endpoint_requester, mock_lyrics_requests):
-    """Test that an empty API response raises a LyricsServiceException."""
-
-    endpoint_requester.post.side_effect = EndpointRequesterException()
-
-    with pytest.raises(LyricsServiceException, match="Request to Lyrics API failed"):
-        await lyrics_service.get_lyrics_list(mock_lyrics_requests)
-
-
-@pytest.mark.asyncio
-async def test_get_lyrics_list_valid_response(
-        lyrics_service,
-        endpoint_requester,
-        mock_lyrics_requests,
-        mock_response_data
-):
-    """Test that get_lyrics_list correctly converts API response to LyricsResponse objects."""
-
-    expected_lyrics_list = [
-        LyricsResponse(track_id="1", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
-        LyricsResponse(track_id="2", artist_name="Artist 2", track_title="Track 2", lyrics="Lyrics for Track 2"),
+    # ASSERT
+    full_response = [
+        LyricsResponse(
+            track_id="1",
+            artist_name="Artist 1",
+            track_title="Track 1",
+            lyrics="Lyrics for Track 1"
+        ),
+        LyricsResponse(
+            track_id="2",
+            artist_name="Artist 2",
+            track_title="Track 2",
+            lyrics="Lyrics for Track 2"
+        ),
+        LyricsResponse(
+            track_id="3",
+            artist_name="Artist 3",
+            track_title="Track 3",
+            lyrics="Lyrics for Track 3"
+        )
     ]
+    exception_indices_set = set(exception_indices)
+    expected_response = [res for index, res in enumerate(full_response) if index not in exception_indices_set]
+    assert res == expected_response
 
-    endpoint_requester.post.return_value = mock_response_data
 
-    lyrics_list = await lyrics_service.get_lyrics_list(mock_lyrics_requests)
+@pytest.mark.asyncio
+async def test_get_lyrics_list_calls_get_lyrics_expected_times(
+        lyrics_service,
+        mock_request_factory,
+        mock_response_factory
+):
+    mock_requests = [mock_request_factory(str(i)) for i in range(1, 6)]
+    mock_response = [mock_response_factory(str(i)) for i in range(1)].pop()
+    task = asyncio.Future()
+    task.set_result(mock_response)
+    lyrics_service.get_lyrics = MagicMock(return_value=task)
 
-    assert lyrics_list == expected_lyrics_list
-    endpoint_requester.post.assert_called_once_with(
-        url=f"{TEST_URL}/lyrics",
-        json_data=[
-            {"track_id": "1", "artist_name": "Artist 1", "track_title": "Track 1"},
-            {"track_id": "2", "artist_name": "Artist 2", "track_title": "Track 2"},
-        ],
-        timeout=None
-    )
+    await lyrics_service.get_lyrics_list(mock_requests)
+
+    assert lyrics_service.get_lyrics.call_count == len(mock_requests)
+
