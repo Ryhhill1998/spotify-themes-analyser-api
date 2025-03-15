@@ -6,7 +6,6 @@ from api.services.lyrics_service import LyricsService, LyricsServiceException
 
 TEST_URL = "http://test-url.com"
 
-
 # 1. Test that get_lyrics_list raises LyricsServiceNotFoundException if data == []
 # 2. Test that get_lyrics_list raises LyricsServiceException if data validation fails.
 # 3. Test that get_lyrics_list raises LyricsServiceException if API request fails.
@@ -14,29 +13,30 @@ TEST_URL = "http://test-url.com"
 
 
 @pytest.fixture
-def endpoint_requester() -> AsyncMock:
+def mock_endpoint_requester() -> AsyncMock:
     return AsyncMock(spec=EndpointRequester)
 
 
 @pytest.fixture
-def lyrics_service(endpoint_requester) -> LyricsService:
-    return LyricsService(base_url=TEST_URL, endpoint_requester=endpoint_requester)
+def lyrics_service(mock_endpoint_requester) -> LyricsService:
+    return LyricsService(base_url=TEST_URL, endpoint_requester=mock_endpoint_requester)
 
 
 @pytest.fixture
 def mock_lyrics_requests() -> list[LyricsRequest]:
     return [
-        LyricsRequest(track_id="1", artist_name="Artist 0", track_title="Track 0"),
-        LyricsRequest(track_id="2", artist_name="Artist 1", track_title="Track 1"),
+        LyricsRequest(track_id="1", artist_name="Artist 1", track_title="Track 1"),
+        LyricsRequest(track_id="2", artist_name="Artist 2", track_title="Track 2"),
     ]
 
 
 @pytest.fixture
 def mock_response_data() -> list[dict[str, str]]:
     return [
-        {"track_id": "1", "artist_name": "Artist 0", "track_title": "Track 0", "lyrics": "Lyrics for Track 0"},
-        {"track_id": "2", "artist_name": "Artist 1", "track_title": "Track 1", "lyrics": "Lyrics for Track 1"},
+        {"track_id": "1", "artist_name": "Artist 1", "track_title": "Track 1", "lyrics": "Lyrics for Track 1"},
+        {"track_id": "2", "artist_name": "Artist 2", "track_title": "Track 2", "lyrics": "Lyrics for Track 2"},
     ]
+
 
 
 @pytest.mark.asyncio
@@ -91,8 +91,8 @@ async def test_get_lyrics_list_valid_response(
     """Test that get_lyrics_list correctly converts API response to LyricsResponse objects."""
 
     expected_lyrics_list = [
-        LyricsResponse(track_id="1", artist_name="Artist 0", track_title="Track 0", lyrics="Lyrics for Track 0"),
-        LyricsResponse(track_id="2", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
+        LyricsResponse(track_id="1", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
+        LyricsResponse(track_id="2", artist_name="Artist 2", track_title="Track 2", lyrics="Lyrics for Track 2"),
     ]
 
     endpoint_requester.post.return_value = mock_response_data
@@ -101,10 +101,10 @@ async def test_get_lyrics_list_valid_response(
 
     assert lyrics_list == expected_lyrics_list
     endpoint_requester.post.assert_called_once_with(
-        url=f"{TEST_URL}/lyrics-list",
+        url=f"{TEST_URL}/lyrics",
         json_data=[
-            {"track_id": "1", "artist_name": "Artist 0", "track_title": "Track 0"},
-            {"track_id": "2", "artist_name": "Artist 1", "track_title": "Track 1"},
+            {"track_id": "1", "artist_name": "Artist 1", "track_title": "Track 1"},
+            {"track_id": "2", "artist_name": "Artist 2", "track_title": "Track 2"},
         ],
         timeout=None
     )

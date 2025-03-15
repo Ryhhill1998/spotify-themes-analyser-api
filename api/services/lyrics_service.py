@@ -107,7 +107,7 @@ class LyricsService:
 
             return lyrics_response
         except pydantic.ValidationError as e:
-            raise LyricsServiceException(f"Failed to convert API response to LyricsResponse object: {e}")
+            raise LyricsServiceException(f"Failed to convert API response to LyricsResponse object - {e}")
         except EndpointRequesterException as e:
             raise LyricsServiceException(f"Request to Lyrics API failed - {e}")
 
