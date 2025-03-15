@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock
 import pytest
-from api.models import AnalysisRequest, EmotionalProfileResponse, EmotionalProfile
+from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 
@@ -23,10 +23,10 @@ def analysis_service(endpoint_requester) -> AnalysisService:
 
 
 @pytest.fixture
-def mock_analysis_requests() -> list[AnalysisRequest]:
+def mock_analysis_requests() -> list[EmotionalProfileRequest]:
     return [
-        AnalysisRequest(track_id="1", lyrics="Lyrics for Track 0"),
-        AnalysisRequest(track_id="2", lyrics="Lyrics for Track 1"),
+        EmotionalProfileRequest(track_id="1", lyrics="Lyrics for Track 0"),
+        EmotionalProfileRequest(track_id="2", lyrics="Lyrics for Track 1"),
     ]
 
 

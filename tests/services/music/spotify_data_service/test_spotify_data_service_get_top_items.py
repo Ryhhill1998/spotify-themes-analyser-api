@@ -178,7 +178,7 @@ async def test_get_top_items_token_refresh_failure(
 
     mock_spotify_auth_service.refresh_tokens.assert_called_once_with(mock_tokens.refresh_token)
     mock_endpoint_requester.get.assert_called_once_with(
-        url=f"{TEST_URL}/me/top/{item_type.value}?time_range=medium_term&limit=20",
+        url=f"{TEST_URL}/me/top/{item_type.value}?time_range=medium_term&limit=10",
         headers={"Authorization": f"Bearer {mock_tokens.access_token}"}
     )
 
