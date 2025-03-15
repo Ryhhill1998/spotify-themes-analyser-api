@@ -54,7 +54,7 @@ class AnalysisService:
     get_emotional_profile(request)
         Retrieves the emotional profile of a track’s lyrics.
     get_emotional_profiles_list(requests)
-        Retrieves emotional profiles for multiple tracks asynchronously.
+        Retrieves emotional profiles for multiple tracks concurrently (async).
     """
     
     def __init__(self, base_url: str, endpoint_requester: EndpointRequester):
@@ -76,18 +76,21 @@ class AnalysisService:
         """
         Retrieves emotional tags associated with a track's lyrics.
 
-        This method sends a POST request to the analysis API with the provided lyrics
-        and returns an `EmotionalTagsResponse` containing emotional tags.
+        This method sends a POST request to the analysis API with the provided lyrics and returns an
+        `EmotionalTagsResponse` containing the track_id and lyrics. The lyrics string is HTML containing span tags
+        with a class of the requested emotion surrounding words and phrases displaying this emotion.
+
+        E.g. 'I don't want to be another memory<br/>I want to be a <span class="anger">haunting reminder</span>'
 
         Parameters
         ----------
         request : EmotionalTagsRequest
-            The `EmotionalTagsRequest` object containing the lyrics for emotional tagging.
+            The `EmotionalTagsRequest` object containing the track_id and lyrics for emotional tagging.
 
         Returns
         -------
         EmotionalTagsResponse
-            An object containing the extracted emotional tags.
+            An object containing the track_id and the lyrics containing emotional tags.
 
         Raises
         ------
@@ -116,10 +119,10 @@ class AnalysisService:
 
     async def get_emotional_profile(self, request: EmotionalProfileRequest) -> EmotionalProfileResponse:
         """
-        Retrieves an emotional profile of a track's lyrics.
+        Retrieves the emotional profile of a track's lyrics.
 
         This method sends a POST request to the analysis API with the provided track_id and lyrics and returns an
-        `EmotionalProfileResponse` object containing the track_id, lyrics, and emotional_profile of the track.
+        `EmotionalProfileResponse` object containing the track_id, lyrics and emotional_profile of the track.
 
         Parameters
         ----------
@@ -129,7 +132,7 @@ class AnalysisService:
         Returns
         -------
         EmotionalProfileResponse
-            An `EmotionalProfileResponse` object containing the track_id, lyrics, and emotional_analysis.
+            An `EmotionalProfileResponse` object containing the track_id, lyrics and emotional_profile.
 
         Raises
         ------
@@ -160,8 +163,7 @@ class AnalysisService:
         """
         Retrieves emotional profiles for multiple tracks asynchronously.
 
-        This method sends multiple POST requests concurrently to fetch emotional profiles
-        for a batch of tracks.
+        This method sends multiple POST requests concurrently to fetch emotional profiles for a batch of tracks.
 
         Parameters
         ----------
@@ -171,7 +173,7 @@ class AnalysisService:
         Returns
         -------
         list[EmotionalProfileResponse]
-            A list of `EmotionalProfileResponse` objects containing emotional analyses.
+            A list of `EmotionalProfileResponse` objects containing emotional profiles of each track.
 
         Notes
         -----
