@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock
 import pytest
-from api.models import AnalysisRequest, EmotionalProfile, EmotionalAnalysis
+from api.models import AnalysisRequest, EmotionalProfileResponse, EmotionalProfile
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 
@@ -86,7 +86,7 @@ async def test_get_analysis_list_empty_response(analysis_service, endpoint_reque
     # API returns empty list
     endpoint_requester.post.return_value = []
 
-    emotional_profiles = await analysis_service.get_emotional_profiles(mock_analysis_requests)
+    emotional_profiles = await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
 
     assert emotional_profiles == []
 
@@ -108,7 +108,7 @@ async def test_get_analysis_list_invalid_response(
     endpoint_requester.post.return_value = mock_response_data
 
     with pytest.raises(AnalysisServiceException, match="Failed to convert API response to EmotionalProfile object"):
-        await analysis_service.get_emotional_profiles(mock_analysis_requests)
+        await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
 
 
 @pytest.mark.asyncio
@@ -118,7 +118,7 @@ async def test_get_analysis_list_api_request_failure(analysis_service, endpoint_
     endpoint_requester.post.side_effect = EndpointRequesterException()
 
     with pytest.raises(AnalysisServiceException, match="Request to Analysis API failed"):
-        await analysis_service.get_emotional_profiles(mock_analysis_requests)
+        await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
 
 
 @pytest.mark.asyncio
@@ -131,10 +131,10 @@ async def test_get_analysis_list_valid_response(
     """Test that get_analysis_list correctly converts API response to AnalysisResponse objects."""
 
     expected_analysis_list = [
-        EmotionalProfile(
+        EmotionalProfileResponse(
             track_id="1",
             lyrics="Lyrics for Track 0",
-            emotional_analysis=EmotionalAnalysis(
+            emotional_profile=EmotionalProfile(
                 joy=0.2,
                 sadness=0.1,
                 anger=0.05,
@@ -152,10 +152,10 @@ async def test_get_analysis_list_valid_response(
                 spirituality=0.15
             )
         ),
-        EmotionalProfile(
+        EmotionalProfileResponse(
             track_id="2",
             lyrics="Lyrics for Track 1",
-            emotional_analysis=EmotionalAnalysis(
+            emotional_profile=EmotionalProfile(
                 joy=0,
                 sadness=0.15,
                 anger=0.05,
@@ -177,7 +177,7 @@ async def test_get_analysis_list_valid_response(
 
     endpoint_requester.post.return_value = mock_response_data
 
-    analysis_list = await analysis_service.get_emotional_profiles(mock_analysis_requests)
+    analysis_list = await analysis_service.get_emotional_profiles_list(mock_analysis_requests)
 
     assert analysis_list == expected_analysis_list
     endpoint_requester.post.assert_called_once_with(

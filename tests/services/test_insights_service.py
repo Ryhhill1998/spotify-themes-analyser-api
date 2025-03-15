@@ -5,8 +5,8 @@ from api.models import (
     SpotifyItemsResponse,
     TokenData,
     LyricsResponse,
+    EmotionalProfileResponse,
     EmotionalProfile,
-    EmotionalAnalysis,
     SpotifyTrack,
     SpotifyTrackArtist,
     TopEmotionsResponse,
@@ -97,12 +97,12 @@ def mock_lyrics_data() -> list[LyricsResponse]:
 
 
 @pytest.fixture
-def mock_analysis_data() -> list[EmotionalProfile]:
+def mock_analysis_data() -> list[EmotionalProfileResponse]:
     return [
-        EmotionalProfile(
+        EmotionalProfileResponse(
             track_id="1",
             lyrics="Lyrics for Track 0",
-            emotional_analysis=EmotionalAnalysis(
+            emotional_profile=EmotionalProfile(
                 joy=0.2,
                 sadness=0.1,
                 anger=0.05,
@@ -120,10 +120,10 @@ def mock_analysis_data() -> list[EmotionalProfile]:
                 spirituality=0.15
             )
         ),
-        EmotionalProfile(
+        EmotionalProfileResponse(
             track_id="2",
             lyrics="Lyrics for Track 1",
-            emotional_analysis=EmotionalAnalysis(
+            emotional_profile=EmotionalProfile(
                 joy=0,
                 sadness=0.15,
                 anger=0.05,

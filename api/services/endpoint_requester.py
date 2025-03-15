@@ -196,9 +196,9 @@ class EndpointRequester:
             )
             res.raise_for_status()
             return res.json()
-        except json.decoder.JSONDecodeError as e:
-            print(f"Invalid JSON response: {e}")
-            raise EndpointRequesterException("Response not valid JSON.")
+        except httpx.InvalidURL as e:
+            print(f"Invalid URL: {e}")
+            raise EndpointRequesterException("Invalid URL provided.")
         except httpx.TimeoutException as e:
             print(f"Request timeout: {e}")
             raise EndpointRequesterException("Request timed out.")
@@ -207,9 +207,9 @@ class EndpointRequester:
             raise EndpointRequesterException(f"Request failed: {str(e)}")
         except httpx.HTTPStatusError as e:
             self._handle_http_status_error(e)
-        except httpx.InvalidURL as e:
-            print(f"Invalid URL: {e}")
-            raise EndpointRequesterException("Invalid URL provided.")
+        except json.decoder.JSONDecodeError as e:
+            print(f"Invalid JSON response: {e}")
+            raise EndpointRequesterException("Response not valid JSON.")
 
     async def get(
             self, url: str,

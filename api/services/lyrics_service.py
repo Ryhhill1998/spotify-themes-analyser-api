@@ -69,19 +69,23 @@ class LyricsService:
         self.base_url = base_url
         self.endpoint_requester = endpoint_requester
 
-    async def _get_lyrics(self, lyrics_request: LyricsRequest) -> LyricsResponse:
+    async def get_lyrics(self, lyrics_request: LyricsRequest) -> LyricsResponse:
+        try:
+            url = f"{self.base_url}/lyrics"
 
-        url = f"{self.base_url}/lyrics"
+            data = await self.endpoint_requester.post(
+                url=url,
+                json_data=lyrics_request.model_dump(),
+                timeout=None
+            )
 
-        data = await self.endpoint_requester.post(
-            url=url,
-            json_data=lyrics_request.model_dump(),
-            timeout=None
-        )
+            lyrics_response = LyricsResponse(**data)
 
-        lyrics_response = LyricsResponse(**data)
-
-        return lyrics_response
+            return lyrics_response
+        except pydantic.ValidationError as e:
+            raise LyricsServiceException(f"Failed to convert API response to LyricsResponse object: {e}")
+        except EndpointRequesterException as e:
+            raise LyricsServiceException(f"Request to Lyrics API failed - {e}")
 
     async def get_lyrics_list(self, lyrics_requests: list[LyricsRequest]) -> list[LyricsResponse]:
         """
@@ -107,15 +111,10 @@ class LyricsService:
             If the request to the Lyrics API fails or the response fails validation.
         """
 
-        try:
-            tasks = [self._get_lyrics(req) for req in lyrics_requests]
-            lyrics_list = await asyncio.gather(*tasks, return_exceptions=True)
-            successful_results = [item for item in lyrics_list if isinstance(item, LyricsResponse)]
+        tasks = [self.get_lyrics(req) for req in lyrics_requests]
+        lyrics_list = await asyncio.gather(*tasks, return_exceptions=True)
+        successful_results = [item for item in lyrics_list if isinstance(item, LyricsResponse)]
 
-            print(f"Retrieved lyrics for {len(successful_results)}/{len(lyrics_list)} tracks.")
+        print(f"Retrieved lyrics for {len(successful_results)}/{len(lyrics_list)} tracks.")
 
-            return successful_results
-        except pydantic.ValidationError as e:
-            raise LyricsServiceException(f"Failed to convert API response to LyricsResponse object: {e}")
-        except EndpointRequesterException as e:
-            raise LyricsServiceException(f"Request to Lyrics API failed - {e}")
+        return successful_results

@@ -297,7 +297,7 @@ class SpotifyDataService(MusicService):
             tokens: TokenData,
             item_type: ItemType,
             time_range: TimeRange = TimeRange.MEDIUM,
-            limit: int = 50
+            limit: int = 10
     ) -> SpotifyItemsResponse:
         """
         Retrieves the top items (tracks or artists) for a user.

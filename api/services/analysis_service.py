@@ -1,6 +1,8 @@
+import asyncio
+
 import pydantic
 
-from api.models import AnalysisRequest, EmotionalProfile
+from api.models import EmotionalProfileResponse, EmotionalTagsResponse, EmotionalTagsRequest, EmotionalProfileRequest
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 
 
@@ -48,7 +50,7 @@ class AnalysisService:
 
     Methods
     -------
-    get_emotional_profiles(analysis_requests)
+    get_emotional_profiles_list(requests)
         Retrieves emotional profiles for a list of lyrics.
     """
     
@@ -67,7 +69,47 @@ class AnalysisService:
         self.base_url = base_url
         self.endpoint_requester = endpoint_requester
 
-    async def get_emotional_profiles(self, analysis_requests: list[AnalysisRequest]) -> list[EmotionalProfile]:
+    async def get_emotional_tags(self, request: EmotionalTagsRequest) -> EmotionalTagsResponse:
+        try:
+            url = f"{self.base_url}/emotional-tags"
+
+            data = await self.endpoint_requester.post(
+                url=url,
+                json_data=request.model_dump(),
+                timeout=None
+            )
+
+            emotional_tags_response = EmotionalTagsResponse(**data)
+
+            return emotional_tags_response
+        except pydantic.ValidationError as e:
+            print(e)
+            raise AnalysisServiceException(f"Failed to convert API response to EmotionalTagsResponse object: {e}")
+        except EndpointRequesterException as e:
+            print(e)
+            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
+
+    async def get_emotional_profile(self, request: EmotionalProfileRequest) -> EmotionalProfileResponse:
+        try:
+            url = f"{self.base_url}/emotional-profile"
+
+            data = await self.endpoint_requester.post(
+                url=url,
+                json_data=request.model_dump(),
+                timeout=None
+            )
+
+            emotional_profile_response = EmotionalProfileResponse(**data)
+
+            return emotional_profile_response
+        except pydantic.ValidationError as e:
+            print(e)
+            raise AnalysisServiceException(f"Failed to convert API response to EmotionalProfile object: {e}")
+        except EndpointRequesterException as e:
+            print(e)
+            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
+
+    async def get_emotional_profiles_list(self, requests: list[EmotionalProfileRequest]) -> list[EmotionalProfileResponse]:
         """
         Retrieves emotional profiles for a list of lyrics.
 
@@ -76,12 +118,12 @@ class AnalysisService:
 
         Parameters
         ----------
-        analysis_requests : list[AnalysisRequest]
+        requests : list[EmotionalProfileRequest]
             A list of `AnalysisRequest` objects containing the track_id and lyrics for each track.
 
         Returns
         -------
-        list[EmotionalProfile]
+        list[EmotionalProfileResponse]
             A list of `EmotionalProfile` objects containing the track_id, lyrics and emotional_analysis for each track.
 
         Raises
@@ -90,17 +132,10 @@ class AnalysisService:
             If the request to the analysis API fails or the response fails validation.
         """
 
-        try:
-            url = f"{self.base_url}/emotional-profile"
+        tasks = [self.get_emotional_profile(req) for req in requests]
+        emotional_profiles = await asyncio.gather(*tasks, return_exceptions=True)
+        successful_results = [item for item in emotional_profiles if isinstance(item, EmotionalProfileResponse)]
 
-            data = await self.endpoint_requester.post(
-                url=url,
-                json_data=[item.model_dump() for item in analysis_requests],
-                timeout=None
-            )
+        print(f"Retrieved analysis for {len(successful_results)}/{len(emotional_profiles)} tracks.")
 
-            return [EmotionalProfile(**entry) for entry in data]
-        except pydantic.ValidationError as e:
-            raise AnalysisServiceException(f"Failed to convert API response to EmotionalProfile object: {e}")
-        except EndpointRequesterException as e:
-            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
+        return successful_results

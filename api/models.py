@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Annotated
 from pydantic import BaseModel, Field
 
@@ -211,20 +212,13 @@ class LyricsResponse(LyricsRequest):
     lyrics: str
 
 
-class AnalysisRequest(BaseModel):
-    """
-    Represents a request for analysis of a track's lyrics.
-
-    Attributes
-    ----------
-    track_id : str
-        The unique identifier of the track.
-    lyrics : str
-        The lyrics of the track to be analyzed.
-    """
-
+class AnalysisRequestBase(BaseModel):
     track_id: str
     lyrics: str
+
+
+class EmotionalProfileRequest(AnalysisRequestBase):
+    pass
 
 
 EmotionPercentage = Annotated[float, Field(ge=0, le=1)]
@@ -233,7 +227,7 @@ A float value representing the percentage of an emotion, ranging from 0 to 1.
 """
 
 
-class EmotionalAnalysis(BaseModel):
+class EmotionalProfile(BaseModel):
     """
     Represents the emotional analysis of a track's lyrics.
 
@@ -288,7 +282,7 @@ class EmotionalAnalysis(BaseModel):
     spirituality: EmotionPercentage
 
 
-class EmotionalProfile(AnalysisRequest):
+class EmotionalProfileResponse(EmotionalProfileRequest):
     """
     Represents the emotional profile of a track's lyrics.
 
@@ -298,11 +292,11 @@ class EmotionalProfile(AnalysisRequest):
 
     Attributes
     ----------
-    emotional_analysis : EmotionalAnalysis
+    emotional_profile : EmotionalProfile
         The detailed emotional analysis of the lyrics.
     """
 
-    emotional_analysis: EmotionalAnalysis
+    emotional_profile: EmotionalProfile
 
 
 class TopEmotion(BaseModel):
@@ -339,3 +333,29 @@ class TopEmotionsResponse(BaseModel):
 
     top_emotions: list[TopEmotion]
     tokens: TokenData
+
+
+class Emotion(Enum):
+    JOY = "joy"
+    SADNESS = "sadness"
+    ANGER = "anger"
+    FEAR = "fear"
+    LOVE = "love"
+    HOPE = "hope"
+    NOSTALGIA = "nostalgia"
+    LONELINESS = "loneliness"
+    CONFIDENCE = "confidence"
+    DESPAIR = "despair"
+    EXCITEMENT = "excitement"
+    MYSTERY = "mystery"
+    DEFIANCE = "defiance"
+    GRATITUDE = "gratitude"
+    SPIRITUALITY = "spirituality"
+
+
+class EmotionalTagsRequest(AnalysisRequestBase):
+    emotion: str
+
+
+class EmotionalTagsResponse(EmotionalTagsRequest):
+    pass
