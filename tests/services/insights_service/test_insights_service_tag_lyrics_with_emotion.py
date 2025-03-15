@@ -15,7 +15,6 @@ from api.services.music.spotify_data_service import SpotifyDataService, SpotifyD
 
 TEST_URL = "http://test-url.com"
 
-
 # 1. Test that tag_lyrics_with_emotion raises InsightsServiceException if any of its dependency services fail.
 # 2. Test that tag_lyrics_with_emotion raises InsightsServiceException if data validation fails.
 # 3. Test that tag_lyrics_with_emotion returns a TaggedLyricsResponse object if data is valid.

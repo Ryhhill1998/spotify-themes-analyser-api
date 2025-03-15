@@ -284,7 +284,7 @@ class InsightsService:
             # Fetch emotional tags
             emotional_tags_request = EmotionalTagsRequest(
                 track_id=track_id,
-                emotion=emotion.value,
+                emotion=emotion,
                 lyrics=lyrics_response.lyrics
             )
             emotional_tags_response = await self.analysis_service.get_emotional_tags(emotional_tags_request)

@@ -335,7 +335,7 @@ class TopEmotionsResponse(BaseModel):
     tokens: TokenData
 
 
-class Emotion(Enum):
+class Emotion(str, Enum):
     JOY = "joy"
     SADNESS = "sadness"
     ANGER = "anger"

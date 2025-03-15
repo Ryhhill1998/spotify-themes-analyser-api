@@ -322,7 +322,7 @@ async def get_top_emotions(
 
 
 @router.get("/tracks/{track_id}/lyrics/emotions/{emotion}")
-async def get_track_lyrics_emotional_tags(
+async def get_lyrics_tagged_with_emotion(
         track_id: str,
         emotion: Emotion,
         tokens: TokenCookieExtractionDependency,

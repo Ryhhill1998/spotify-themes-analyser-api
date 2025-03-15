@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from api.dependencies import get_spotify_data_service, get_insights_service, get_tokens_from_cookies
 from api.main import app
-from api.models import TokenData, SpotifyItemResponse, SpotifyItem, TopEmotionsResponse
+from api.models import TokenData, SpotifyItemResponse, SpotifyItem, TopEmotionsResponse, TaggedLyricsResponse
 from api.services.insights_service import InsightsService, InsightsServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, SpotifyDataServiceNotFoundException, \
     SpotifyDataServiceException
@@ -56,7 +56,7 @@ def client(mock_request_tokens) -> TestClient:
 @pytest.fixture
 def mock_item_factory():
     def _create(item_id: str):
-        mock = MagicMock(spec=SpotifyItem)
+        mock = MagicMock()
         mock.model_dump.return_value = {"id": item_id}
         return mock
 
@@ -86,6 +86,17 @@ def mock_emotions_response(mock_item_factory, mock_response_tokens) -> MagicMock
     mock_emotions = [mock_item_factory(item_id=str(i)) for i in range(1, 6)]
     mock.top_emotions = mock_emotions
     mock.tokens = mock_response_tokens
+    print(f"{mock.top_emotions = }")
+    return mock
+
+
+@pytest.fixture
+def mock_tagged_lyrics_response(mock_item_factory, mock_response_tokens) -> MagicMock:
+    mock = MagicMock(spec=TaggedLyricsResponse)
+    mock_tagged_lyrics = mock_item_factory(item_id=str(1))
+    mock.lyrics_data = mock_tagged_lyrics
+    mock.tokens = mock_response_tokens
+    print(f"{mock.lyrics_data = }")
     return mock
 
 
@@ -223,8 +234,6 @@ def test_get_top_tracks_success(client, mock_spotify_data_service, mock_items_re
 def test_get_top_emotions_500(client, mock_insights_service, mock_emotions_response):
     app.dependency_overrides[get_insights_service] = lambda: mock_insights_service
     mock_insights_service.get_top_emotions.side_effect = InsightsServiceException("Test")
-    client.cookies.set("access_token", "access")
-    client.cookies.set("refresh_token", "refresh")
 
     res = client.get("/data/top-emotions")
 
@@ -241,6 +250,43 @@ def test_get_top_emotions_success(client, mock_insights_service, mock_emotions_r
     assert (
             res.status_code == 200 and
             res.json() == [{"id": "1"}, {"id": "2"}, {"id": "3"}, {"id": "4"}, {"id": "5"}] and
+            "new_access" in set_cookie_headers and
+            "new_refresh" in set_cookie_headers
+    )
+
+
+# -------------------- GET LYRICS TAGGED WITH EMOTION -------------------- #
+# 1. Test that /tracks/{track_id}/lyrics/emotions/{emotion} returns 500 status code if InsightsServiceException occurs.
+# 2. Test that /tracks/{track_id}/lyrics/emotions/{emotion} returns 422 status code if invalid emotion provided.
+# 3. Test that /tracks/{track_id}/lyrics/emotions/{emotion} returns expected response.
+def test_get_lyrics_tagged_with_emotion_500(client, mock_insights_service):
+    app.dependency_overrides[get_insights_service] = lambda: mock_insights_service
+    mock_insights_service.tag_lyrics_with_emotion.side_effect = InsightsServiceException("Test")
+
+    res = client.get("/data/tracks/1/lyrics/emotions/joy")
+
+    assert res.status_code == 500 and "Something went wrong." in res.text
+
+
+def test_get_lyrics_tagged_with_emotion_422(client, mock_insights_service):
+    app.dependency_overrides[get_insights_service] = lambda: mock_insights_service
+    mock_insights_service.tag_lyrics_with_emotion.side_effect = InsightsServiceException("Test")
+
+    res = client.get("/data/tracks/1/lyrics/emotions/blah")
+
+    assert res.status_code == 422
+
+
+def test_get_lyrics_tagged_with_emotion_success(client, mock_insights_service, mock_tagged_lyrics_response):
+    app.dependency_overrides[get_insights_service] = lambda: mock_insights_service
+    mock_insights_service.tag_lyrics_with_emotion.return_value = mock_tagged_lyrics_response
+
+    res = client.get("/data/tracks/1/lyrics/emotions/joy")
+
+    set_cookie_headers = res.headers.get("set-cookie")
+    assert (
+            res.status_code == 200 and
+            res.json() == {"id": "1"} and
             "new_access" in set_cookie_headers and
             "new_refresh" in set_cookie_headers
     )
