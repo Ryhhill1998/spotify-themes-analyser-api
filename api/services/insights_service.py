@@ -2,7 +2,8 @@ from collections import defaultdict
 
 import pydantic
 
-from api.models import TokenData, LyricsRequest, AnalysisRequest, TopEmotionsResponse, TopEmotion, EmotionalProfile
+from api.models import TokenData, LyricsRequest, TopEmotionsResponse, TopEmotion, EmotionalProfileResponse, \
+    EmotionalProfileRequest
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException
@@ -24,7 +25,7 @@ class InsightsServiceException(Exception):
 
 class InsightsService:
     """
-    A service for analyzing emotional profiles of top tracks.
+    A service for analyzing emotional analyses of top tracks.
 
     This service retrieves the user's top tracks from Spotify, fetches their lyrics,
     analyzes the lyrics for emotional content, and aggregates the results to determine
@@ -70,7 +71,7 @@ class InsightsService:
         self.analysis_service = analysis_service
 
     @staticmethod
-    def _aggregate_emotions(emotional_profiles: list[EmotionalProfile]) -> dict:
+    def _aggregate_emotions(emotional_analyses: list[EmotionalProfileResponse]) -> dict:
         """
         Aggregates emotional analysis results across multiple songs.
 
@@ -78,7 +79,7 @@ class InsightsService:
 
         Parameters
         ----------
-        emotional_profiles : list[EmotionalProfile]
+        emotional_analyses : list[EmotionalProfileResponse]
             A list of `EmotionalProfile` objects containing emotional analysis results.
 
         Returns
@@ -91,15 +92,15 @@ class InsightsService:
         total_emotions = defaultdict(
             lambda: {
                 "total": 0,
-                "max_track": {"track_id": None, "percentage": 0}
+                "max_track": {"track_id": None, "lyrics": None, "percentage": 0}
             }
         )
 
-        for profile in emotional_profiles:
-            track_id = profile.track_id
-            emotional_analysis = profile.emotional_analysis
+        for analysis in emotional_analyses:
+            track_id = analysis.track_id
+            emotional_profile = analysis.emotional_profile
 
-            for emotion, percentage in emotional_analysis.model_dump().items():
+            for emotion, percentage in emotional_profile.model_dump().items():
                 total_emotions[emotion]["total"] += percentage
 
                 if percentage > total_emotions[emotion]["max_track"]["percentage"]:
@@ -207,15 +208,22 @@ class InsightsService:
             self._check_data_not_empty(data=lyrics_list, label="lyrics")
 
             # get top emotions for each set of lyrics
-            analysis_requests = [AnalysisRequest(track_id=entry.track_id, lyrics=entry.lyrics) for entry in lyrics_list]
+            emotional_profile_requests = [
+                EmotionalProfileRequest(
+                    track_id=entry.track_id,
+                    lyrics=entry.lyrics
+                )
+                for entry
+                in lyrics_list
+            ]
 
-            emotional_profiles = await self.analysis_service.get_emotional_profiles(analysis_requests)
-            self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
+            emotional_analyses = await self.analysis_service.get_emotional_profiles_list(emotional_profile_requests)
+            self._check_data_not_empty(data=emotional_analyses, label="emotional analyses")
 
-            total_emotions = self._aggregate_emotions(emotional_profiles)
+            total_emotions = self._aggregate_emotions(emotional_analyses)
             average_emotions = self._get_average_emotions(
                 total_emotions=total_emotions,
-                result_count=len(emotional_profiles)
+                result_count=len(emotional_analyses)
             )
             top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
 
