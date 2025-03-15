@@ -184,12 +184,13 @@ class AnalysisService:
         Parameters
         ----------
         requests : list[EmotionalProfileRequest]
-            A list of `EmotionalProfileRequest` objects containing track_ids and lyrics.
+            A list of `EmotionalProfileRequest` objects containing track_id and lyrics of each track.
 
         Returns
         -------
         list[EmotionalProfileResponse]
-            A list of `EmotionalProfileResponse` objects containing emotional profiles of each track.
+            A list of `EmotionalProfileResponse` objects containing the track_id, lyrics and emotional_profile of each
+            track.
 
         Notes
         -----

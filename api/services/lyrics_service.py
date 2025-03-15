@@ -39,7 +39,7 @@ class LyricsService:
     A service for retrieving track lyrics from an external API.
 
     This service interacts with an API that provides track lyrics based on track metadata.
-    It uses an `EndpointRequester` to send requests and process responses.
+    It uses an `EndpointRequester` to send requests and process responses asynchronously.
 
     Attributes
     ----------
@@ -50,8 +50,10 @@ class LyricsService:
 
     Methods
     -------
+    get_lyrics(lyrics_request)
+        Retrieves the lyrics for a single track.
     get_lyrics_list(lyrics_requests)
-        Retrieves lyrics for a list of tracks.
+        Retrieves lyrics for multiple tracks asynchronously.
     """
 
     def __init__(self, base_url: str, endpoint_requester: EndpointRequester):
@@ -70,6 +72,28 @@ class LyricsService:
         self.endpoint_requester = endpoint_requester
 
     async def get_lyrics(self, lyrics_request: LyricsRequest) -> LyricsResponse:
+        """
+        Retrieves the lyrics for a single track.
+
+        This method sends a POST request to the lyrics API with the provided track metadata
+        and returns a `LyricsResponse` object containing the lyrics.
+
+        Parameters
+        ----------
+        lyrics_request : LyricsRequest
+            The `LyricsRequest` object containing the track_id, artist_name and track_title.
+
+        Returns
+        -------
+        LyricsResponse
+            A `LyricsResponse` object containing the track_id, artist_name, track_title and lyrics.
+
+        Raises
+        ------
+        LyricsServiceException
+            If the request to the lyrics API fails or the response fails validation.
+        """
+
         try:
             url = f"{self.base_url}/lyrics"
 
@@ -89,10 +113,9 @@ class LyricsService:
 
     async def get_lyrics_list(self, lyrics_requests: list[LyricsRequest]) -> list[LyricsResponse]:
         """
-        Retrieves lyrics for a list of tracks.
+        Retrieves lyrics for a multiple tracks asynchronously.
 
-        This method sends a POST request to the lyrics API with the provided track details and returns a list of 
-        `LyricsResponse` objects containing the lyrics.
+        This method sends multiple POST requests concurrently to fetch lyrics for a batch of tracks.
 
         Parameters
         ----------
@@ -105,10 +128,10 @@ class LyricsService:
             A list of `LyricsResponse` objects containing the track_id, artist_name, track_title and lyrics for each 
             requested track.
 
-        Raises
-        ------
-        LyricsServiceException
-            If the request to the Lyrics API fails or the response fails validation.
+        Notes
+        -----
+        - This method uses asyncio.gather() to perform concurrent requests.
+        - If some requests fail, only successful responses will be returned.
         """
 
         tasks = [self.get_lyrics(req) for req in lyrics_requests]
