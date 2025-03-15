@@ -1,5 +1,4 @@
 import asyncio
-import unittest.mock
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
@@ -10,9 +9,8 @@ TEST_URL = "http://test-url.com"
 
 
 # 1. Test that get_emotional_profiles returns [] if all get_emotional_profile tasks raise an AnalysisServiceException.
-# 2. Test that get_emotional_profiles does not return an item if the get_emotional_profile task raises an AnalysisServiceException.
-# 3. Test that get_emotional_profile is called X times - where X is the number of requests.
-# 4. Test that get_emotional_profile returns expected results.
+# 2. Test that get_emotional_profiles returns expected response.
+# 3. Test that get_emotional_profiles calls get_emotional_profile expected number of times.
 
 
 @pytest.fixture
@@ -180,7 +178,7 @@ async def test_get_emotional_profiles_returns_expected_response(
 async def test_get_emotional_profiles_calls_get_emotional_profile_expected_times(
         analysis_service,
         mock_request_factory,
-mock_response_factory
+        mock_response_factory
 ):
     mock_requests = [mock_request_factory(str(i)) for i in range(1, 6)]
     mock_response = [mock_response_factory(str(i)) for i in range(1)].pop()
