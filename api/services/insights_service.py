@@ -217,13 +217,13 @@ class InsightsService:
                 in lyrics_list
             ]
 
-            emotional_analyses = await self.analysis_service.get_emotional_profiles(emotional_profile_requests)
-            self._check_data_not_empty(data=emotional_analyses, label="emotional analyses")
+            emotional_profiles = await self.analysis_service.get_emotional_profiles(emotional_profile_requests)
+            self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
 
-            total_emotions = self._aggregate_emotions(emotional_analyses)
+            total_emotions = self._aggregate_emotions(emotional_profiles)
             average_emotions = self._get_average_emotions(
                 total_emotions=total_emotions,
-                result_count=len(emotional_analyses)
+                result_count=len(emotional_profiles)
             )
             top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
 

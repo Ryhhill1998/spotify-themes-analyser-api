@@ -20,7 +20,6 @@ from api.services.music.spotify_data_service import SpotifyDataService, SpotifyD
 
 TEST_URL = "http://test-url.com"
 
-
 # 1. Test that get_top_emotions raises InsightsServiceException if any of its dependency services fail.
 # 2. Test that get_top_emotions raises InsightsServiceException if data validation fails.
 # 3. Test that get_top_emotions returns a TopEmotionsResponse object if data is valid.
@@ -59,26 +58,26 @@ def mock_tokens() -> TokenData:
 def mock_spotify_data(mock_tokens) -> SpotifyItemsResponse:
     data = [
         SpotifyTrack(
-            id="0",
-            name=f"Track 0",
+            id="1",
+            name="Track 1",
             images=[
                 SpotifyItemImage(height=640, width=640, url="http://image-url.com")
             ],
             spotify_url="http://spotify-test-url.com",
-            artist=SpotifyTrackArtist(id="0", name=f"Artist 0"),
+            artist=SpotifyTrackArtist(id="1", name=f"Artist 1"),
             release_date="01/01/1999",
             explicit=False,
             duration_ms=100,
             popularity=50
         ),
         SpotifyTrack(
-            id="1",
-            name=f"Track 0",
+            id="2",
+            name="Track 2",
             images=[
                 SpotifyItemImage(height=640, width=640, url="http://image-url.com")
             ],
             spotify_url="http://spotify-test-url.com",
-            artist=SpotifyTrackArtist(id="1", name=f"Artist 1"),
+            artist=SpotifyTrackArtist(id="2", name=f"Artist 2"),
             release_date="01/01/1999",
             explicit=False,
             duration_ms=100,
@@ -91,8 +90,8 @@ def mock_spotify_data(mock_tokens) -> SpotifyItemsResponse:
 @pytest.fixture
 def mock_lyrics_data() -> list[LyricsResponse]:
     return [
-        LyricsResponse(track_id="1", artist_name="Artist 0", track_title="Track 0", lyrics="Lyrics for Track 0"),
-        LyricsResponse(track_id="2", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
+        LyricsResponse(track_id="1", artist_name="Artist 1", track_title="Track 1", lyrics="Lyrics for Track 1"),
+        LyricsResponse(track_id="2", artist_name="Artist 2", track_title="Track 2", lyrics="Lyrics for Track 2"),
     ]
 
 
@@ -101,7 +100,7 @@ def mock_analysis_data() -> list[EmotionalProfileResponse]:
     return [
         EmotionalProfileResponse(
             track_id="1",
-            lyrics="Lyrics for Track 0",
+            lyrics="Lyrics for Track 1",
             emotional_profile=EmotionalProfile(
                 joy=0.2,
                 sadness=0.1,
@@ -122,7 +121,7 @@ def mock_analysis_data() -> list[EmotionalProfileResponse]:
         ),
         EmotionalProfileResponse(
             track_id="2",
-            lyrics="Lyrics for Track 1",
+            lyrics="Lyrics for Track 2",
             emotional_profile=EmotionalProfile(
                 joy=0,
                 sadness=0.15,
@@ -244,7 +243,7 @@ async def test_get_top_emotions_analysis_data_validation_failure(
     mock_spotify_data_service.get_top_items.return_value = mock_spotify_data
     mock_lyrics_service.get_lyrics_list.return_value = mock_lyrics_data
     mock_analysis_service.get_emotional_profiles.return_value = mock_analysis_data
-    setattr(mock_analysis_data[0], "emotional_analysis", None)
+    setattr(mock_analysis_data[0], "emotional_profile", None)
 
     with pytest.raises(InsightsServiceException, match="Data validation failure"):
         await insights_service.get_top_emotions(mock_tokens)
@@ -257,8 +256,8 @@ async def test_get_top_emotions_spotify_data_empty(
         mock_tokens,
         mock_spotify_data
 ):
-    mock_spotify_data_service.get_top_items.return_value = mock_spotify_data
     mock_spotify_data.data = []
+    mock_spotify_data_service.get_top_items.return_value = mock_spotify_data
 
     with pytest.raises(
             InsightsServiceException,
