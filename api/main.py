@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.dependencies import get_settings
-from api.routers import auth, data
+from api.routers.auth import auth
+from api.routers.data import data
 from api.services.endpoint_requester import EndpointRequester
 
 settings = get_settings()

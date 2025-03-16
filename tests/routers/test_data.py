@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from api.dependencies import get_spotify_data_service, get_insights_service, get_tokens_from_cookies
 from api.main import app
-from api.models import TokenData, SpotifyItemResponse, SpotifyItem, TopEmotionsResponse, TaggedLyricsResponse
+from api.models import TokenData, SpotifyItemResponse, TopEmotionsResponse, TaggedLyricsResponse
 from api.services.insights_service import InsightsService, InsightsServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, SpotifyDataServiceNotFoundException, \
     SpotifyDataServiceException

@@ -6,9 +6,9 @@ from fastapi.responses import RedirectResponse
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
-from api.utils import set_response_cookie
+from api.routers.utils import set_response_cookie
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/spotify")
 
 
 def create_custom_redirect_response(redirect_url: str) -> Response:
@@ -29,7 +29,7 @@ def create_custom_redirect_response(redirect_url: str) -> Response:
     return Response(headers={"location": redirect_url}, status_code=307)
 
 
-@router.get("/spotify/login")
+@router.get("/login")
 async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     """
     Initiates the Spotify login process.
@@ -57,7 +57,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     return response
 
 
-@router.get("/spotify/callback")
+@router.get("/callback")
 async def callback(
         code: str,
         state: str,
