@@ -9,7 +9,6 @@ TEST_CLIENT_SECRET = "client_secret"
 TEST_REDIRECT_URI = "http://redirect-test-url.com"
 TEST_SCOPE = "user-top-read"
 
-
 # 1. Test that auth_header generates the authorisation header correctly.
 # 2. Test that generate_auth_url returns expected url.
 # 3. Test that _get_tokens raises SpotifyAuthServiceException if Spotify API request fails.
@@ -18,7 +17,6 @@ TEST_SCOPE = "user-top-read"
 # 6. Test that refresh_tokens updates access_token always.
 # 7. Test that refresh_tokens updates refresh_token if new one returned by Spotify.
 # 8. Test that refresh_tokens keeps refresh_token if new one not returned by Spotify.
-
 
 @pytest.fixture
 def spotify_auth_service(mock_endpoint_requester) -> SpotifyAuthService:

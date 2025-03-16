@@ -1,10 +1,7 @@
-from unittest.mock import AsyncMock
 import pytest
-from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest, EmotionalTagsRequest, \
-    EmotionalTagsResponse, Emotion
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
-from api.services.analysis_service import AnalysisService, AnalysisServiceException
-
+from api.models import EmotionalTagsRequest, EmotionalTagsResponse, Emotion
+from api.services.endpoint_requester import EndpointRequesterException
+from api.services.analysis_service import AnalysisServiceException
 
 # 1. Test that get_emotional_tags raises AnalysisServiceException if data validation fails.
 # 2. Test that get_emotional_tags raises AnalysisServiceException if API request fails.
@@ -64,6 +61,6 @@ async def test_get_emotional_profile_data_success(
     expected_response = EmotionalTagsResponse(
         track_id="1",
         lyrics="Lyrics for Track 1",
-        emotion="anger"
+        emotion=Emotion.ANGER
     )
     assert res == expected_response
