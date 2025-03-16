@@ -110,6 +110,7 @@ async def test_not_found_error(endpoint_requester, mock_httpx_client, mock_respo
     with pytest.raises(EndpointRequesterNotFoundException, match="Resource not found"):
         await method_to_test(TEST_URL)
 
+
 @pytest.mark.parametrize("method", ["get", "post"])
 @pytest.mark.asyncio
 async def test_json_decode_error(endpoint_requester, mock_httpx_client, mock_response_success, method):

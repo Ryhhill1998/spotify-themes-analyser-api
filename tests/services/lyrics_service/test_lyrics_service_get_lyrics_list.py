@@ -2,24 +2,11 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from api.models import LyricsRequest, LyricsResponse
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
-from api.services.lyrics_service import LyricsService, LyricsServiceException
-
-TEST_URL = "http://test-url.com"
+from api.services.lyrics_service import LyricsServiceException
 
 # 1. Test that get_lyrics_list returns [] if all get_lyrics tasks raise a LyricsServiceException.
 # 2. Test that get_lyrics_list returns expected response.
 # 3. Test that get_lyrics_list calls get_lyrics expected number of times.
-
-
-@pytest.fixture
-def mock_endpoint_requester() -> AsyncMock:
-    return AsyncMock(spec=EndpointRequester)
-
-
-@pytest.fixture
-def lyrics_service(mock_endpoint_requester) -> LyricsService:
-    return LyricsService(base_url=TEST_URL, endpoint_requester=mock_endpoint_requester)
 
 
 @pytest.fixture

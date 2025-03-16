@@ -1,25 +1,13 @@
-from unittest.mock import AsyncMock
 import pytest
 from api.models import LyricsRequest, LyricsResponse
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException, \
-    EndpointRequesterNotFoundException
-from api.services.lyrics_service import LyricsService, LyricsServiceException, LyricsServiceNotFoundException
+from api.services.endpoint_requester import EndpointRequesterException, EndpointRequesterNotFoundException
+from api.services.lyrics_service import LyricsServiceException, LyricsServiceNotFoundException
 
 TEST_URL = "http://test-url.com"
 
 # 1. Test that get_lyrics raises LyricsServiceException if data validation fails.
 # 2. Test that get_lyrics raises LyricsServiceException if API request fails.
 # 3. Test that get_lyrics returns expected response.
-
-
-@pytest.fixture
-def mock_endpoint_requester() -> AsyncMock:
-    return AsyncMock(spec=EndpointRequester)
-
-
-@pytest.fixture
-def lyrics_service(mock_endpoint_requester) -> LyricsService:
-    return LyricsService(base_url=TEST_URL, endpoint_requester=mock_endpoint_requester)
 
 
 @pytest.fixture

@@ -2,25 +2,11 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
-from api.services.endpoint_requester import EndpointRequester
-from api.services.analysis_service import AnalysisService, AnalysisServiceException
-
-TEST_URL = "http://test-url.com"
-
+from api.services.analysis_service import AnalysisServiceException
 
 # 1. Test that get_emotional_profiles returns [] if all get_emotional_profile tasks raise an AnalysisServiceException.
 # 2. Test that get_emotional_profiles returns expected response.
 # 3. Test that get_emotional_profiles calls get_emotional_profile expected number of times.
-
-
-@pytest.fixture
-def mock_endpoint_requester() -> AsyncMock:
-    return AsyncMock(spec=EndpointRequester)
-
-
-@pytest.fixture
-def analysis_service(mock_endpoint_requester) -> AnalysisService:
-    return AnalysisService(base_url=TEST_URL, endpoint_requester=mock_endpoint_requester)
 
 
 @pytest.fixture

@@ -1,9 +1,7 @@
-from unittest.mock import AsyncMock
 import pytest
 
 from api.models import (
     SpotifyItemsResponse,
-    TokenData,
     LyricsResponse,
     EmotionalProfileResponse,
     EmotionalProfile,
@@ -13,45 +11,14 @@ from api.models import (
     TopEmotion,
     SpotifyItemImage
 )
-from api.services.analysis_service import AnalysisService, AnalysisServiceException
-from api.services.insights_service import InsightsService, InsightsServiceException
-from api.services.lyrics_service import LyricsService, LyricsServiceException
-from api.services.music.spotify_data_service import SpotifyDataService, SpotifyDataServiceException
-
-TEST_URL = "http://test-url.com"
+from api.services.analysis_service import AnalysisServiceException
+from api.services.insights_service import InsightsServiceException
+from api.services.lyrics_service import LyricsServiceException
+from api.services.music.spotify_data_service import SpotifyDataServiceException
 
 # 1. Test that get_top_emotions raises InsightsServiceException if any of its dependency services fail.
 # 2. Test that get_top_emotions raises InsightsServiceException if data validation fails.
 # 3. Test that get_top_emotions returns a TopEmotionsResponse object if data is valid.
-
-
-@pytest.fixture
-def mock_spotify_data_service() -> AsyncMock:
-    return AsyncMock(spec=SpotifyDataService)
-
-
-@pytest.fixture
-def mock_lyrics_service() -> AsyncMock:
-    return AsyncMock(spec=LyricsService)
-
-
-@pytest.fixture
-def mock_analysis_service() -> AsyncMock:
-    return AsyncMock(spec=AnalysisService)
-
-
-@pytest.fixture
-def insights_service(mock_spotify_data_service, mock_lyrics_service, mock_analysis_service) -> InsightsService:
-    return InsightsService(
-        spotify_data_service=mock_spotify_data_service,
-        lyrics_service=mock_lyrics_service,
-        analysis_service=mock_analysis_service
-    )
-
-
-@pytest.fixture
-def mock_tokens() -> TokenData:
-    return TokenData(access_token="access", refresh_token="refresh")
 
 
 @pytest.fixture

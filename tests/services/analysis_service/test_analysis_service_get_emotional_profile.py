@@ -1,24 +1,11 @@
-from unittest.mock import AsyncMock
 import pytest
 from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
-from api.services.analysis_service import AnalysisService, AnalysisServiceException
-
-TEST_URL = "http://test-url.com"
+from api.services.endpoint_requester import EndpointRequesterException
+from api.services.analysis_service import AnalysisServiceException
 
 # 1. Test that get_emotional_profile raises AnalysisServiceException if data validation fails.
 # 2. Test that get_emotional_profile raises AnalysisServiceException if API request fails.
 # 3. Test that get_emotional_profile returns expected response.
-
-
-@pytest.fixture
-def mock_endpoint_requester() -> AsyncMock:
-    return AsyncMock(spec=EndpointRequester)
-
-
-@pytest.fixture
-def analysis_service(mock_endpoint_requester) -> AnalysisService:
-    return AnalysisService(base_url=TEST_URL, endpoint_requester=mock_endpoint_requester)
 
 
 @pytest.fixture
