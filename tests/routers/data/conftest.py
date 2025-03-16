@@ -21,14 +21,6 @@ def mock_insights_service() -> MagicMock:
 
 
 @pytest.fixture
-def mock_request_tokens() -> MagicMock:
-    mock = MagicMock(spec=TokenData)
-    mock.access_token = "access"
-    mock.refresh_token = "refresh"
-    return mock
-
-
-@pytest.fixture
 def mock_response_tokens() -> MagicMock:
     mock = MagicMock(spec=TokenData)
     mock.access_token = "new_access"

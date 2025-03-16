@@ -45,12 +45,12 @@ def insights_service(mock_spotify_data_service, mock_lyrics_service, mock_analys
 
 
 @pytest.fixture
-def mock_tokens() -> TokenData:
+def mock_request_tokens() -> TokenData:
     return TokenData(access_token="access", refresh_token="refresh")
 
 
 @pytest.fixture
-def mock_spotify_data(mock_tokens) -> SpotifyItemResponse:
+def mock_spotify_data(mock_request_tokens) -> SpotifyItemResponse:
     data = SpotifyTrack(
         id="1",
         name="Track 1",
@@ -64,7 +64,7 @@ def mock_spotify_data(mock_tokens) -> SpotifyItemResponse:
         duration_ms=100,
         popularity=50
     )
-    return SpotifyItemResponse(data=data, tokens=mock_tokens)
+    return SpotifyItemResponse(data=data, tokens=mock_request_tokens)
 
 
 @pytest.fixture
@@ -85,13 +85,13 @@ def mock_analysis_data() -> EmotionalTagsResponse:
 async def test_tag_lyrics_with_emotion_spotify_data_service_failure(
         insights_service,
         mock_spotify_data_service,
-        mock_tokens
+        mock_request_tokens
 ):
     exception_message = "Test SpotifyDataService failure"
     mock_spotify_data_service.get_item_by_id.side_effect = SpotifyDataServiceException(exception_message)
 
     with pytest.raises(InsightsServiceException, match="Service failure") as e:
-        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_tokens)
+        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_request_tokens)
 
     assert exception_message in str(e)
 
@@ -99,7 +99,7 @@ async def test_tag_lyrics_with_emotion_spotify_data_service_failure(
 @pytest.mark.asyncio
 async def test_tag_lyrics_with_emotion_lyrics_service_failure(
         insights_service,
-        mock_tokens,
+        mock_request_tokens,
         mock_spotify_data_service,
         mock_spotify_data,
         mock_lyrics_service
@@ -109,7 +109,7 @@ async def test_tag_lyrics_with_emotion_lyrics_service_failure(
     mock_lyrics_service.get_lyrics.side_effect = LyricsServiceException(exception_message)
 
     with pytest.raises(InsightsServiceException, match="Service failure") as e:
-        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_tokens)
+        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_request_tokens)
 
     assert exception_message in str(e)
 
@@ -117,7 +117,7 @@ async def test_tag_lyrics_with_emotion_lyrics_service_failure(
 @pytest.mark.asyncio
 async def test_tag_lyrics_with_emotion_analysis_service_failure(
         insights_service,
-        mock_tokens,
+        mock_request_tokens,
         mock_spotify_data_service,
         mock_spotify_data,
         mock_lyrics_service,
@@ -130,7 +130,7 @@ async def test_tag_lyrics_with_emotion_analysis_service_failure(
     mock_analysis_service.get_emotional_tags.side_effect = AnalysisServiceException(exception_message)
 
     with pytest.raises(InsightsServiceException, match="Service failure") as e:
-        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_tokens)
+        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_request_tokens)
 
     assert exception_message in str(e)
 
@@ -140,7 +140,7 @@ async def test_tag_lyrics_with_emotion_analysis_service_failure(
 async def test_tag_lyrics_with_emotion_spotify_data_validation_failure(
         insights_service,
         mock_spotify_data_service,
-        mock_tokens,
+        mock_request_tokens,
         mock_spotify_data,
         attr_name
 ):
@@ -149,7 +149,7 @@ async def test_tag_lyrics_with_emotion_spotify_data_validation_failure(
     setattr(mock_spotify_data.data, attr_name, None)
 
     with pytest.raises(InsightsServiceException, match="Data validation failure"):
-        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_tokens)
+        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_request_tokens)
 
 
 @pytest.mark.parametrize("attr_name", ["track_id", "lyrics"])
@@ -157,7 +157,7 @@ async def test_tag_lyrics_with_emotion_spotify_data_validation_failure(
 async def test_tag_lyrics_with_emotion_lyrics_data_validation_failure(
         insights_service,
         mock_spotify_data_service,
-        mock_tokens,
+        mock_request_tokens,
         mock_spotify_data,
         mock_lyrics_service,
         mock_lyrics_data,
@@ -168,14 +168,14 @@ async def test_tag_lyrics_with_emotion_lyrics_data_validation_failure(
     setattr(mock_lyrics_data, attr_name, None)
 
     with pytest.raises(InsightsServiceException, match="Data validation failure"):
-        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_tokens)
+        await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_request_tokens)
 
 
 @pytest.mark.asyncio
 async def test_tag_lyrics_with_emotion_returns_expected_response(
         insights_service,
         mock_spotify_data_service,
-        mock_tokens,
+        mock_request_tokens,
         mock_spotify_data,
         mock_lyrics_service,
         mock_lyrics_data,
@@ -186,7 +186,7 @@ async def test_tag_lyrics_with_emotion_returns_expected_response(
     mock_lyrics_service.get_lyrics.return_value = mock_lyrics_data
     mock_analysis_service.get_emotional_tags.return_value = mock_analysis_data
 
-    res = await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_tokens)
+    res = await insights_service.tag_lyrics_with_emotion(track_id="1", emotion=Emotion.SADNESS, tokens=mock_request_tokens)
 
     expected_response = TaggedLyricsResponse(
         lyrics_data=EmotionalTagsResponse(track_id="1", emotion=Emotion.SADNESS, lyrics="Lyrics for Track 1"),

@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from api.models import TokenData
 from api.services.endpoint_requester import EndpointRequester
 
 

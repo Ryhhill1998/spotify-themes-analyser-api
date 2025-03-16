@@ -1,8 +1,6 @@
-from unittest.mock import AsyncMock
-
 import pytest
 
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
+from api.services.endpoint_requester import EndpointRequesterException
 from api.services.music.spotify_auth_service import SpotifyAuthService, SpotifyAuthServiceException
 
 TEST_URL = "http://test-url.com"
@@ -23,11 +21,6 @@ TEST_SCOPE = "user-top-read"
 
 
 @pytest.fixture
-def mock_endpoint_requester() -> AsyncMock:
-    return AsyncMock(spec=EndpointRequester)
-
-
-@pytest.fixture
 def spotify_auth_service(mock_endpoint_requester) -> SpotifyAuthService:
     return SpotifyAuthService(
         client_id=TEST_CLIENT_ID,
@@ -40,7 +33,7 @@ def spotify_auth_service(mock_endpoint_requester) -> SpotifyAuthService:
 
 
 @pytest.fixture
-def mock_tokens_response() -> dict[str, str]:
+def mock_request_tokens_response() -> dict[str, str]:
     return {"access_token": "new_access", "refresh_token": "new_refresh"}
 
 
@@ -79,17 +72,17 @@ async def test__get_tokens_invalid_response_data(spotify_auth_service, mock_endp
 
 
 @pytest.mark.asyncio
-async def test_create_tokens_no_refresh_token(spotify_auth_service, mock_endpoint_requester, mock_tokens_response):
-    mock_endpoint_requester.post.return_value = mock_tokens_response
-    mock_tokens_response.pop("refresh_token")
+async def test_create_tokens_no_refresh_token(spotify_auth_service, mock_endpoint_requester, mock_request_tokens_response):
+    mock_endpoint_requester.post.return_value = mock_request_tokens_response
+    mock_request_tokens_response.pop("refresh_token")
 
     with pytest.raises(SpotifyAuthServiceException, match="Failed to validate tokens"):
         await spotify_auth_service.create_tokens("auth_code")
 
 
 @pytest.mark.asyncio
-async def test_create_tokens_success(spotify_auth_service, mock_endpoint_requester, mock_tokens_response):
-    mock_endpoint_requester.post.return_value = mock_tokens_response
+async def test_create_tokens_success(spotify_auth_service, mock_endpoint_requester, mock_request_tokens_response):
+    mock_endpoint_requester.post.return_value = mock_request_tokens_response
 
     tokens = await spotify_auth_service.create_tokens("auth_code")
 
@@ -100,9 +93,9 @@ async def test_create_tokens_success(spotify_auth_service, mock_endpoint_request
 async def test_refresh_tokens_new_refresh_token_returned(
         spotify_auth_service,
         mock_endpoint_requester,
-        mock_tokens_response
+        mock_request_tokens_response
 ):
-    mock_endpoint_requester.post.return_value = mock_tokens_response
+    mock_endpoint_requester.post.return_value = mock_request_tokens_response
 
     tokens = await spotify_auth_service.refresh_tokens("old_refresh")
 
@@ -113,11 +106,11 @@ async def test_refresh_tokens_new_refresh_token_returned(
 async def test_refresh_tokens_no_new_refresh_token_returned(
         spotify_auth_service,
         mock_endpoint_requester,
-        mock_tokens_response
+        mock_request_tokens_response
 ):
     old_refresh_token = "old_refresh"
-    mock_endpoint_requester.post.return_value = mock_tokens_response
-    mock_tokens_response.pop("refresh_token")
+    mock_endpoint_requester.post.return_value = mock_request_tokens_response
+    mock_request_tokens_response.pop("refresh_token")
 
     tokens = await spotify_auth_service.refresh_tokens(old_refresh_token)
 
