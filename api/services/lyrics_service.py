@@ -3,7 +3,8 @@ import asyncio
 import pydantic
 
 from api.models import LyricsRequest, LyricsResponse
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
+from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException, \
+    EndpointRequesterNotFoundException
 
 
 class LyricsServiceException(Exception):
@@ -107,8 +108,16 @@ class LyricsService:
 
             return lyrics_response
         except pydantic.ValidationError as e:
+            print(e)
             raise LyricsServiceException(f"Failed to convert API response to LyricsResponse object - {e}")
+        except EndpointRequesterNotFoundException as e:
+            print(e)
+            raise LyricsServiceNotFoundException(
+                f"Requested lyrics not found for track_id: {lyrics_request.track_id}, "
+                f"artist_name: {lyrics_request.artist_name}, track_title: {lyrics_request.track_title} - {e}"
+            )
         except EndpointRequesterException as e:
+            print(e)
             raise LyricsServiceException(f"Request to Lyrics API failed - {e}")
 
     def _create_lyrics_tasks(self, requests: list[LyricsRequest]):

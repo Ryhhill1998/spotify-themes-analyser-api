@@ -1,8 +1,9 @@
 from unittest.mock import AsyncMock
 import pytest
 from api.models import LyricsRequest, LyricsResponse
-from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
-from api.services.lyrics_service import LyricsService, LyricsServiceException
+from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException, \
+    EndpointRequesterNotFoundException
+from api.services.lyrics_service import LyricsService, LyricsServiceException, LyricsServiceNotFoundException
 
 TEST_URL = "http://test-url.com"
 
@@ -48,6 +49,19 @@ async def test_get_lyrics_data_validation_failure(
     mock_endpoint_requester.post.return_value = mock_response
 
     with pytest.raises(LyricsServiceException, match="Failed to convert API response to LyricsResponse object"):
+        await lyrics_service.get_lyrics(mock_request)
+
+
+@pytest.mark.asyncio
+async def test_get_lyrics_api_request_not_found_failure(lyrics_service, mock_endpoint_requester, mock_request):
+    """Test that an empty API response raises a LyricsServiceException."""
+
+    mock_endpoint_requester.post.side_effect = EndpointRequesterNotFoundException()
+
+    with pytest.raises(
+            LyricsServiceNotFoundException,
+            match=f"Requested lyrics not found for track_id: 1, artist_name: Artist 1, track_title: Track 1"
+    ):
         await lyrics_service.get_lyrics(mock_request)
 
 

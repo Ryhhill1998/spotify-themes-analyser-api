@@ -20,20 +20,6 @@ class AnalysisServiceException(Exception):
         super().__init__(message)
 
 
-class AnalysisServiceNotFoundException(AnalysisServiceException):
-    """
-    Exception raised when AnalysisService fails to return results for the request.
-
-    Parameters
-    ----------
-    message : str
-        The error message describing the request for which no results were found.
-    """
-
-    def __init__(self, message):
-        super().__init__(message)
-
-
 class AnalysisService:
     """
     A service for interacting with the analysis API to retrieve emotional tags and emotional profiles of lyrics.

@@ -127,30 +127,23 @@ class InsightsService:
 
         Raises
         ------
-        InsightsServiceException
-            If result_count is less than or equal to 0 or required keys are missing from total_emotions.
+        KeyError
+            If total_emotions dict does not contain the required keys.
+        ZeroDivisionError
+            If results_count == 0.
         pydantic.ValidationError
             If creating TopEmotion objects fails.
         """
 
-        try:
-            if result_count <= 0:
-                raise InsightsServiceException("result_count must be positive.")
-
-            return [
-                TopEmotion(
-                    name=emotion,
-                    percentage=round(info["total"] / result_count, 2),
-                    track_id=track_id
-                )
-                for emotion, info in total_emotions.items()
-                if (track_id := info["max_track"]["track_id"]) is not None
-            ]
-        except KeyError as e:
-            missing_key = e.args[0]
-            raise InsightsServiceException(
-                f"Missing expected key '{missing_key}' in total_emotions dict - {e}"
+        return [
+            TopEmotion(
+                name=emotion,
+                percentage=round(info["total"] / result_count, 2),
+                track_id=track_id
             )
+            for emotion, info in total_emotions.items()
+            if (track_id := info["max_track"]["track_id"]) is not None
+        ]
 
     @staticmethod
     def _check_data_not_empty(data: list, label: str):
