@@ -3,7 +3,7 @@ from collections import defaultdict
 import pydantic
 
 from api.models import TokenData, LyricsRequest, TopEmotionsResponse, TopEmotion, EmotionalProfileResponse, \
-    EmotionalProfileRequest, EmotionalTagsRequest, Emotion, TaggedLyricsResponse
+    EmotionalProfileRequest, EmotionalTagsRequest, Emotion, TaggedLyricsResponse, SpotifyTrack, LyricsResponse
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException
@@ -150,6 +150,46 @@ class InsightsService:
         if len(data) == 0:
             raise InsightsServiceException(f"No {label} found. Cannot proceed further with analysis.")
 
+    async def _fetch_top_tracks(self, tokens: TokenData):
+        top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
+        top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_tracks_response.data]
+        tokens = top_tracks_response.tokens
+        return top_tracks, tokens
+
+    async def _fetch_lyrics_list(self, top_tracks: list[SpotifyTrack]) -> list[LyricsResponse]:
+        lyrics_requests = [
+            LyricsRequest(
+                track_id=entry.id,
+                artist_name=entry.artist.name,
+                track_title=entry.name
+            )
+            for entry
+            in top_tracks
+        ]
+        lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
+        return lyrics_list
+
+    async def _analyse_emotions(self, lyrics_list: list[LyricsResponse]):
+        emotional_profile_requests = [
+            EmotionalProfileRequest(
+                track_id=entry.track_id,
+                lyrics=entry.lyrics
+            )
+            for entry
+            in lyrics_list
+        ]
+        emotional_profiles = await self.analysis_service.get_emotional_profiles(emotional_profile_requests)
+        return emotional_profiles
+
+    def _process_emotions(self, emotional_profiles: list[EmotionalProfileResponse], limit: int):
+        total_emotions = self._aggregate_emotions(emotional_profiles)
+        average_emotions = self._get_average_emotions(
+            total_emotions=total_emotions,
+            result_count=len(emotional_profiles)
+        )
+        top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
+        return top_emotions
+
     async def get_top_emotions(self, tokens: TokenData, limit: int = 5) -> TopEmotionsResponse:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
@@ -181,44 +221,19 @@ class InsightsService:
 
         try:
             # get top tracks and refreshed tokens (if expired)
-            top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
-            top_tracks = top_tracks_response.data
-            tokens = top_tracks_response.tokens
+            top_tracks, tokens = await self._fetch_top_tracks(tokens)
             self._check_data_not_empty(data=top_tracks, label="top tracks")
 
             # get lyrics for each track
-            lyrics_requests = [
-                LyricsRequest(
-                    track_id=entry.id,
-                    artist_name=entry.artist.name,
-                    track_title=entry.name
-                )
-                for entry
-                in top_tracks
-            ]
-
-            lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
+            lyrics_list = await self._fetch_lyrics_list(top_tracks)
             self._check_data_not_empty(data=lyrics_list, label="lyrics")
 
-            # get top emotions for each set of lyrics
-            emotional_profile_requests = [
-                EmotionalProfileRequest(
-                    track_id=entry.track_id,
-                    lyrics=entry.lyrics
-                )
-                for entry
-                in lyrics_list
-            ]
-
-            emotional_profiles = await self.analysis_service.get_emotional_profiles(emotional_profile_requests)
+            # get emotional profiles for each set of lyrics
+            emotional_profiles = await self._analyse_emotions(lyrics_list)
             self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
 
-            total_emotions = self._aggregate_emotions(emotional_profiles)
-            average_emotions = self._get_average_emotions(
-                total_emotions=total_emotions,
-                result_count=len(emotional_profiles)
-            )
-            top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
+            # get top emotions from all emotional profiles
+            top_emotions = self._process_emotions(emotional_profiles=emotional_profiles, limit=limit)
 
             # convert top emotions and tokens to top emotions response object
             top_emotions_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
