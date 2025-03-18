@@ -3,7 +3,8 @@ from collections import defaultdict
 import pydantic
 
 from api.models import TokenData, LyricsRequest, TopEmotionsResponse, TopEmotion, EmotionalProfileResponse, \
-    EmotionalProfileRequest, EmotionalTagsRequest, Emotion, TaggedLyricsResponse, SpotifyTrack, LyricsResponse
+    EmotionalProfileRequest, EmotionalTagsRequest, Emotion, TaggedLyricsResponse, SpotifyTrack, LyricsResponse, \
+    EmotionalTagsResponse
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
 from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException
@@ -145,7 +146,7 @@ class InsightsService:
         if len(data) == 0:
             raise InsightsServiceException(f"No {label} found. Cannot proceed further with analysis.")
 
-    async def _fetch_top_tracks(self, tokens: TokenData):
+    async def _fetch_top_tracks(self, tokens: TokenData) -> tuple[list[SpotifyTrack], TokenData]:
         top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
         top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_tracks_response.data]
         self._check_data_not_empty(data=top_tracks, label="top tracks")
@@ -179,7 +180,7 @@ class InsightsService:
         self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
         return emotional_profiles
 
-    def _process_emotions(self, emotional_profiles: list[EmotionalProfileResponse], limit: int):
+    def _process_emotions(self, emotional_profiles: list[EmotionalProfileResponse], limit: int) -> list[TopEmotion]:
         total_emotions = self._aggregate_emotions(emotional_profiles)
         average_emotions = self._get_average_emotions(
             total_emotions=total_emotions,
@@ -239,6 +240,24 @@ class InsightsService:
             print(e)
             raise InsightsServiceException(f"Data validation failure - {e}")
 
+    async def _fetch_track_details(self, track_id: str, tokens: TokenData) -> tuple[SpotifyTrack, TokenData]:
+        track_response = await self.spotify_data_service.get_item_by_id(
+            item_id=track_id,
+            tokens=tokens,
+            item_type=ItemType.TRACKS
+        )
+        track = SpotifyTrack(**track_response.data.model_dump())
+        tokens = track_response.tokens
+        return track, tokens
+
+    async def _fetch_lyrics(self, track: SpotifyTrack) -> LyricsResponse:
+        lyrics_request = LyricsRequest(track_id=track.id, artist_name=track.artist.name, track_title=track.name)
+        return await self.lyrics_service.get_lyrics(lyrics_request)
+
+    async def _fetch_emotional_tags(self, track_id: str, emotion: Emotion, lyrics: str) -> EmotionalTagsResponse:
+        emotional_tags_request = EmotionalTagsRequest(track_id=track_id, emotion=emotion, lyrics=lyrics)
+        return await self.analysis_service.get_emotional_tags(emotional_tags_request)
+
     async def tag_lyrics_with_emotion(
             self,
             track_id: str,
@@ -269,26 +288,9 @@ class InsightsService:
         """
 
         try:
-            # Fetch track details
-            track_response = await self.spotify_data_service.get_item_by_id(
-                item_id=track_id,
-                tokens=tokens,
-                item_type=ItemType.TRACKS
-            )
-            track = track_response.data
-            tokens = track_response.tokens
-
-            # Fetch lyrics
-            lyrics_request = LyricsRequest(track_id=track_id, artist_name=track.artist.name, track_title=track.name)
-            lyrics_response = await self.lyrics_service.get_lyrics(lyrics_request)
-
-            # Fetch emotional tags
-            emotional_tags_request = EmotionalTagsRequest(
-                track_id=track_id,
-                emotion=emotion,
-                lyrics=lyrics_response.lyrics
-            )
-            emotional_tags_response = await self.analysis_service.get_emotional_tags(emotional_tags_request)
+            track, tokens = await self._fetch_track_details(track_id, tokens)
+            lyrics_response = await self._fetch_lyrics(track)
+            emotional_tags_response = await self._fetch_emotional_tags(track_id, emotion, lyrics_response.lyrics)
 
             return TaggedLyricsResponse(lyrics_data=emotional_tags_response, tokens=tokens)
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
