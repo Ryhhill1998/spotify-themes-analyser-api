@@ -89,12 +89,7 @@ class InsightsService:
             the highest percentage for that emotion.
         """
 
-        total_emotions = defaultdict(
-            lambda: {
-                "total": 0,
-                "max_track": {"track_id": None, "lyrics": None, "percentage": 0}
-            }
-        )
+        total_emotions = defaultdict(lambda: {"total": 0, "max_track": {"track_id": None, "percentage": 0}})
 
         for analysis in emotional_analyses:
             track_id = analysis.track_id
