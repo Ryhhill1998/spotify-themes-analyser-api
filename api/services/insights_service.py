@@ -153,6 +153,7 @@ class InsightsService:
     async def _fetch_top_tracks(self, tokens: TokenData):
         top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
         top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_tracks_response.data]
+        self._check_data_not_empty(data=top_tracks, label="top tracks")
         tokens = top_tracks_response.tokens
         return top_tracks, tokens
 
@@ -167,6 +168,7 @@ class InsightsService:
             in top_tracks
         ]
         lyrics_list = await self.lyrics_service.get_lyrics_list(lyrics_requests)
+        self._check_data_not_empty(data=lyrics_list, label="lyrics")
         return lyrics_list
 
     async def _analyse_emotions(self, lyrics_list: list[LyricsResponse]):
@@ -179,6 +181,7 @@ class InsightsService:
             in lyrics_list
         ]
         emotional_profiles = await self.analysis_service.get_emotional_profiles(emotional_profile_requests)
+        self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
         return emotional_profiles
 
     def _process_emotions(self, emotional_profiles: list[EmotionalProfileResponse], limit: int):
@@ -222,23 +225,18 @@ class InsightsService:
         try:
             # get top tracks and refreshed tokens (if expired)
             top_tracks, tokens = await self._fetch_top_tracks(tokens)
-            self._check_data_not_empty(data=top_tracks, label="top tracks")
 
             # get lyrics for each track
             lyrics_list = await self._fetch_lyrics_list(top_tracks)
-            self._check_data_not_empty(data=lyrics_list, label="lyrics")
 
             # get emotional profiles for each set of lyrics
             emotional_profiles = await self._analyse_emotions(lyrics_list)
-            self._check_data_not_empty(data=emotional_profiles, label="emotional profiles")
 
             # get top emotions from all emotional profiles
             top_emotions = self._process_emotions(emotional_profiles=emotional_profiles, limit=limit)
 
-            # convert top emotions and tokens to top emotions response object
-            top_emotions_response = TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
-
-            return top_emotions_response
+            # convert top emotions and tokens to top emotions response object and return
+            return TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
             print(e)
             raise InsightsServiceException(f"Service failure - {e}")
