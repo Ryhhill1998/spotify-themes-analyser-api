@@ -100,4 +100,3 @@ async def get_lyrics_tagged_with_emotion(
         return response
     except InsightsServiceException:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong.")
-

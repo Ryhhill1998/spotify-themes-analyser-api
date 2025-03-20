@@ -85,7 +85,7 @@ class AnalysisService:
         """
 
         try:
-            url = f"{self.base_url}/emotional-tags"
+            url = f"{self.base_url}/emotions/tags"
 
             data = await self.endpoint_requester.post(
                 url=url,
@@ -127,7 +127,7 @@ class AnalysisService:
         """
 
         try:
-            url = f"{self.base_url}/emotional-profile"
+            url = f"{self.base_url}/emotions/profile"
 
             data = await self.endpoint_requester.post(
                 url=url,
