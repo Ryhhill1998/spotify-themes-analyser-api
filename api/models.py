@@ -224,7 +224,7 @@ class SpotifyTrack(SpotifyItem):
 
 class SpotifyItemResponse(BaseModel):
     """
-    Represents a response containing a single Spotify item.
+    Represents a response containing a single Spotify item and updated authentication tokens.
 
     Attributes
     ----------
@@ -240,7 +240,7 @@ class SpotifyItemResponse(BaseModel):
 
 class SpotifyItemsResponse(BaseModel):
     """
-    Represents a response containing a list of Spotify items.
+    Represents a response containing a list of Spotify items and updated authentication tokens.
 
     Attributes
     ----------
@@ -420,7 +420,7 @@ class TopEmotion(BaseModel):
 
 class TopEmotionsResponse(BaseModel):
     """
-    Represents a response containing the top emotions detected across tracks.
+    Represents a response containing the top emotions detected across tracks and updated spotify auth tokens.
 
     Attributes
     ----------
@@ -522,7 +522,7 @@ class EmotionalTagsResponse(EmotionalTagsRequest):
 
 class TaggedLyricsResponse(BaseModel):
     """
-    Represents a response containing lyrics with emotional tags.
+    Represents a response containing lyrics with emotional tags and updated spotify authentication tokens.
 
     Attributes
     ----------
