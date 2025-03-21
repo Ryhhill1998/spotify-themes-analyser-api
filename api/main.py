@@ -1,8 +1,10 @@
+import sys
 from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from api.dependencies import get_settings
 from api.routers.auth import auth
@@ -12,11 +14,18 @@ from api.services.endpoint_requester import EndpointRequester
 settings = get_settings()
 
 
+def initialise_logger():
+    logger.remove()
+    logger.add(sys.stdout, format="{time} {level} {message}", level="INFO")
+    logger.add(sys.stderr, format="{time} {level} {message}", level="ERROR")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = httpx.AsyncClient()
 
     try:
+        initialise_logger()
         app.state.endpoint_requester = EndpointRequester(client)
 
         yield
