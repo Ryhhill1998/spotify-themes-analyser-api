@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, Request, HTTPException
+from loguru import logger
 
 from api.models import TokenData
 from api.services.analysis_service import AnalysisService
