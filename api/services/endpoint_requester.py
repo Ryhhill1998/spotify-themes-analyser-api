@@ -2,6 +2,7 @@ import json
 from enum import Enum
 from typing import Any
 import httpx
+from loguru import logger
 
 
 class EndpointRequesterException(Exception):
@@ -127,14 +128,17 @@ class EndpointRequester:
         status_code = e.response.status_code
 
         if status_code == 401:
-            print(f"Unauthorised request: {e}")
-            raise EndpointRequesterUnauthorisedException()
+            error_message = f"Unauthorised request - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterUnauthorisedException(error_message)
         elif status_code == 404:
-            print(f"Resource not found: {e}")
-            raise EndpointRequesterNotFoundException()
+            error_message = f"Resource not found - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterNotFoundException(error_message)
         else:
-            print("Request failed.")
-            raise EndpointRequesterException()
+            error_message = f"Request failed - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterException(error_message)
 
     async def _request(
             self,
@@ -197,19 +201,23 @@ class EndpointRequester:
             res.raise_for_status()
             return res.json()
         except httpx.InvalidURL as e:
-            print(f"Invalid URL: {e}")
-            raise EndpointRequesterException("Invalid URL provided.")
+            error_message = f"Invalid URL - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterException(error_message)
         except httpx.TimeoutException as e:
-            print(f"Request timeout: {e}")
-            raise EndpointRequesterException("Request timed out.")
+            error_message = f"Request timeout - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterException(error_message)
         except httpx.RequestError as e:
-            print(f"Request failed: {e}")
-            raise EndpointRequesterException(f"Request failed: {str(e)}")
+            error_message = f"Request failed - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterException(error_message)
         except httpx.HTTPStatusError as e:
             self._handle_http_status_error(e)
         except json.decoder.JSONDecodeError as e:
-            print(f"Invalid JSON response: {e}")
-            raise EndpointRequesterException("Response not valid JSON.")
+            error_message = f"Invalid JSON response - {e}"
+            logger.exception(error_message)
+            raise EndpointRequesterException(error_message)
 
     async def get(
             self, url: str,
