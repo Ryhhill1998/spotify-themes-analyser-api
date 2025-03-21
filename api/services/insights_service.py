@@ -145,7 +145,9 @@ class InsightsService:
     @staticmethod
     def _check_data_not_empty(data: list, label: str):
         if len(data) == 0:
-            raise InsightsServiceException(f"No {label} found. Cannot proceed further with analysis.")
+            error_message = f"No {label} found. Cannot proceed further with analysis."
+            logger.error(error_message)
+            raise InsightsServiceException(error_message)
 
     async def _fetch_top_tracks(self, tokens: TokenData) -> tuple[list[SpotifyTrack], TokenData]:
         top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
