@@ -193,6 +193,6 @@ class AnalysisService:
         emotional_profiles = await asyncio.gather(*tasks, return_exceptions=True)
         successful_results = [item for item in emotional_profiles if isinstance(item, EmotionalProfileResponse)]
 
-        print(f"Retrieved analysis for {len(successful_results)}/{len(emotional_profiles)} tracks.")
+        logger.info(f"Retrieved analysis for {len(successful_results)}/{len(emotional_profiles)} tracks.")
 
         return successful_results

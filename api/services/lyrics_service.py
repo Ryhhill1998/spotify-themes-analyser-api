@@ -167,6 +167,6 @@ class LyricsService:
         lyrics_list = await asyncio.gather(*tasks, return_exceptions=True)
         successful_results = [item for item in lyrics_list if isinstance(item, LyricsResponse)]
 
-        print(f"Retrieved lyrics for {len(successful_results)}/{len(lyrics_list)} tracks.")
+        logger.info(f"Retrieved lyrics for {len(successful_results)}/{len(lyrics_list)} tracks.")
 
         return successful_results
