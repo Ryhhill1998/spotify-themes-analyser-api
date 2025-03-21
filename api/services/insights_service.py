@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import pydantic
+from loguru import logger
 
 from api.models import TokenData, LyricsRequest, TopEmotionsResponse, TopEmotion, EmotionalProfileResponse, \
     EmotionalProfileRequest, EmotionalTagsRequest, Emotion, TaggedLyricsResponse, SpotifyTrack, LyricsResponse, \
@@ -234,11 +235,13 @@ class InsightsService:
             # convert top emotions and tokens to top emotions response object and return
             return TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
-            print(e)
-            raise InsightsServiceException(f"Service failure - {e}")
+            error_message = f"Service failure - {e}"
+            logger.exception(error_message)
+            raise InsightsServiceException(error_message)
         except (pydantic.ValidationError, AttributeError) as e:
-            print(e)
-            raise InsightsServiceException(f"Data validation failure - {e}")
+            error_message = f"Data validation failure - {e}"
+            logger.exception(error_message)
+            raise InsightsServiceException(error_message)
 
     async def _fetch_track_details(self, track_id: str, tokens: TokenData) -> tuple[SpotifyTrack, TokenData]:
         track_response = await self.spotify_data_service.get_item_by_id(
@@ -294,8 +297,10 @@ class InsightsService:
 
             return TaggedLyricsResponse(lyrics_data=emotional_tags_response, tokens=tokens)
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
-            print(e)
-            raise InsightsServiceException(f"Service failure - {e}")
+            error_message = f"Service failure - {e}"
+            logger.exception(error_message)
+            raise InsightsServiceException(error_message)
         except (pydantic.ValidationError, AttributeError) as e:
-            print(e)
-            raise InsightsServiceException(f"Data validation failure - {e}")
+            error_message = f"Data validation failure - {e}"
+            logger.exception(error_message)
+            raise InsightsServiceException(error_message)
