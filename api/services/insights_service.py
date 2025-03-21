@@ -144,12 +144,49 @@ class InsightsService:
 
     @staticmethod
     def _check_data_not_empty(data: list, label: str):
+        """
+        Checks if the provided data is empty and raises an exception if it is.
+
+        Parameters
+        ----------
+        data : list
+            The list of data to be checked.
+        label : str
+            A label representing the type of data being checked (e.g., "top tracks").
+
+        Raises
+        ------
+        InsightsServiceException
+            If the data list is empty, an exception is raised with an appropriate error message.
+        """
+
         if len(data) == 0:
             error_message = f"No {label} found. Cannot proceed further with analysis."
             logger.error(error_message)
             raise InsightsServiceException(error_message)
 
     async def _fetch_top_tracks(self, tokens: TokenData) -> tuple[list[SpotifyTrack], TokenData]:
+        """
+        Fetches the user's top tracks from Spotify.
+
+        Parameters
+        ----------
+        tokens : TokenData
+            The authentication tokens to be used for the request.
+
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - A list of `SpotifyTrack` objects representing the top tracks.
+            - The updated `TokenData` containing new tokens.
+
+        Raises
+        ------
+        InsightsServiceException
+            If no top tracks are found, an exception is raised.
+        """
+
         top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
         top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_tracks_response.data]
         self._check_data_not_empty(data=top_tracks, label="top tracks")
@@ -157,6 +194,25 @@ class InsightsService:
         return top_tracks, tokens
 
     async def _fetch_lyrics_list(self, top_tracks: list[SpotifyTrack]) -> list[LyricsResponse]:
+        """
+        Fetches the lyrics for a list of top tracks.
+
+        Parameters
+        ----------
+        top_tracks : list of SpotifyTrack
+            A list of Spotify tracks for which lyrics need to be fetched.
+
+        Returns
+        -------
+        list
+            A list of `LyricsResponse` objects containing the lyrics for each track.
+
+        Raises
+        ------
+        InsightsServiceException
+            If no lyrics are found, an exception is raised.
+        """
+
         lyrics_requests = [
             LyricsRequest(
                 track_id=entry.id,
@@ -171,6 +227,25 @@ class InsightsService:
         return lyrics_list
 
     async def _analyse_emotions(self, lyrics_list: list[LyricsResponse]):
+        """
+        Analyzes the emotions detected in the lyrics of the provided tracks.
+
+        Parameters
+        ----------
+        lyrics_list : list of LyricsResponse
+            A list of `LyricsResponse` objects containing lyrics for each track.
+
+        Returns
+        -------
+        list
+            A list of `EmotionalProfileResponse` objects representing the emotional profiles of the tracks.
+
+        Raises
+        ------
+        InsightsServiceException
+            If no emotional profiles are found, an exception is raised.
+        """
+
         emotional_profile_requests = [
             EmotionalProfileRequest(
                 track_id=entry.track_id,
@@ -184,6 +259,23 @@ class InsightsService:
         return emotional_profiles
 
     def _process_emotions(self, emotional_profiles: list[EmotionalProfileResponse], limit: int) -> list[TopEmotion]:
+        """
+        Processes the emotional profiles of the tracks and returns the top emotions.
+
+        Parameters
+        ----------
+        emotional_profiles : list of EmotionalProfileResponse
+            A list of `EmotionalProfileResponse` objects representing the emotional profiles of the tracks.
+        limit : int
+            The maximum number of top emotions to return.
+
+        Returns
+        -------
+        list
+            A list of `TopEmotion` objects representing the top emotions detected in the tracks, sorted by their
+            average percentage.
+        """
+
         total_emotions = self._aggregate_emotions(emotional_profiles)
         average_emotions = self._get_average_emotions(
             total_emotions=total_emotions,
@@ -246,6 +338,29 @@ class InsightsService:
             raise InsightsServiceException(error_message)
 
     async def _fetch_track_details(self, track_id: str, tokens: TokenData) -> tuple[SpotifyTrack, TokenData]:
+        """
+        Fetches the details of a specific track by its ID.
+
+        Parameters
+        ----------
+        track_id : str
+            The unique identifier of the track whose details are to be fetched.
+        tokens : TokenData
+            The authentication tokens used for the request.
+
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - A `SpotifyTrack` object representing the track's details.
+            - The updated `TokenData` containing new tokens.
+
+        Raises
+        ------
+        InsightsServiceException
+            If the track details cannot be fetched, an exception is raised.
+        """
+
         track_response = await self.spotify_data_service.get_item_by_id(
             item_id=track_id,
             tokens=tokens,
@@ -256,10 +371,52 @@ class InsightsService:
         return track, tokens
 
     async def _fetch_lyrics(self, track: SpotifyTrack) -> LyricsResponse:
+        """
+        Fetches the lyrics for a given track.
+
+        Parameters
+        ----------
+        track : SpotifyTrack
+            The track for which lyrics need to be fetched.
+
+        Returns
+        -------
+        LyricsResponse
+            A `LyricsResponse` object containing the lyrics of the track.
+
+        Raises
+        ------
+        InsightsServiceException
+            If the lyrics cannot be fetched, an exception is raised.
+        """
+
         lyrics_request = LyricsRequest(track_id=track.id, artist_name=track.artist.name, track_title=track.name)
         return await self.lyrics_service.get_lyrics(lyrics_request)
 
     async def _fetch_emotional_tags(self, track_id: str, emotion: Emotion, lyrics: str) -> EmotionalTagsResponse:
+        """
+        Fetches emotional tags for a given track's lyrics based on a specific emotion.
+
+        Parameters
+        ----------
+        track_id : str
+            The unique identifier of the track whose emotional tags are to be fetched.
+        emotion : Emotion
+            The specific emotion to be detected in the track's lyrics (e.g., "joy", "anger").
+        lyrics : str
+            The lyrics of the track to be analyzed for emotional content.
+
+        Returns
+        -------
+        EmotionalTagsResponse
+            An `EmotionalTagsResponse` object containing the detected emotional tags for the track's lyrics.
+
+        Raises
+        ------
+        InsightsServiceException
+            If the emotional tags cannot be fetched, an exception is raised.
+        """
+
         emotional_tags_request = EmotionalTagsRequest(track_id=track_id, emotion=emotion, lyrics=lyrics)
         return await self.analysis_service.get_emotional_tags(emotional_tags_request)
 
