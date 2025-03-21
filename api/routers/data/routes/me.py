@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
 from api.routers.utils import create_json_response_and_set_token_cookies, get_top_items_response
@@ -117,5 +118,7 @@ async def get_top_emotions(
         response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
 
         return response
-    except InsightsServiceException:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong.")
+    except InsightsServiceException as e:
+        error_message = "Failed to retrieve the user's top emotions"
+        logger.exception(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)

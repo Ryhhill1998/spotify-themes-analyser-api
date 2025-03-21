@@ -1,5 +1,6 @@
 from fastapi import Response, HTTPException, status
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from api.models import TokenData
 from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException, \
@@ -76,10 +77,14 @@ async def get_item_response(
         response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
 
         return response
-    except SpotifyDataServiceNotFoundException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Could not find the requested item.")
-    except SpotifyDataServiceException:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong.")
+    except SpotifyDataServiceNotFoundException as e:
+        error_message = "Could not find the requested item"
+        logger.exception(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_message)
+    except SpotifyDataServiceException as e:
+        error_message = "Failed to retrieve the requested item"
+        logger.exception(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)
 
 
 async def get_top_items_response(
@@ -122,5 +127,7 @@ async def get_top_items_response(
         response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
 
         return response
-    except SpotifyDataServiceException:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong.")
+    except SpotifyDataServiceException as e:
+        error_message = "Failed to retrieve the user's top items"
+        logger.exception(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)

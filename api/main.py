@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
@@ -46,6 +47,17 @@ app.include_router(auth.router)
 app.include_router(data.router)
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, e: Exception):
+    """Handles all unhandled exceptions globally."""
+    logger.exception(f"Unhandled Exception occurred at {request.url} - {e}")
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Something went wrong. Please try again later."},
+    )
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Middleware to log all incoming requests."""
@@ -56,11 +68,6 @@ async def log_requests(request: Request, call_next):
     req_method = request.method
 
     log_message = f"{ip_addr}:{port} made {req_method} request to {url}."
-
-    if req_method == "POST":
-        body = await request.body()
-        body_text = body.decode("utf-8") if body else "No body"
-        log_message += f" Data sent: {body_text}"
 
     logger.info(log_message)
 

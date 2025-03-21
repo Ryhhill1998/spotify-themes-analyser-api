@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
 from api.models import Emotion
@@ -98,5 +99,7 @@ async def get_lyrics_tagged_with_emotion(
         )
 
         return response
-    except InsightsServiceException:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Something went wrong.")
+    except InsightsServiceException as e:
+        error_message = "Failed to tag lyrics with requested emotion"
+        logger.exception(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)
