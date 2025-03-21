@@ -1,4 +1,5 @@
 import asyncio
+from loguru import logger
 
 import pydantic
 
@@ -97,11 +98,13 @@ class AnalysisService:
 
             return emotional_tags_response
         except pydantic.ValidationError as e:
-            print(e)
-            raise AnalysisServiceException(f"Failed to convert API response to EmotionalTagsResponse object: {e}")
+            error_message = f"Failed to convert API response to EmotionalTagsResponse object - {e}"
+            logger.exception(error_message)
+            raise AnalysisServiceException(error_message)
         except EndpointRequesterException as e:
-            print(e)
-            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
+            error_message = f"Request to Analysis API failed - {e}"
+            logger.exception(error_message)
+            raise AnalysisServiceException(error_message)
 
     async def get_emotional_profile(self, request: EmotionalProfileRequest) -> EmotionalProfileResponse:
         """
@@ -139,11 +142,13 @@ class AnalysisService:
 
             return emotional_profile_response
         except pydantic.ValidationError as e:
-            print(e)
-            raise AnalysisServiceException(f"Failed to convert API response to EmotionalProfile object: {e}")
+            error_message = f"Failed to convert API response to EmotionalProfile object - {e}"
+            logger.exception(error_message)
+            raise AnalysisServiceException(error_message)
         except EndpointRequesterException as e:
-            print(e)
-            raise AnalysisServiceException(f"Request to Analysis API failed - {e}")
+            error_message = f"Request to Analysis API failed - {e}"
+            logger.exception(error_message)
+            raise AnalysisServiceException(error_message)
 
     def _create_emotional_profile_tasks(self, requests: list[EmotionalProfileRequest]):
         """
