@@ -49,21 +49,78 @@ class SpotifyTrackArtist(SpotifyItemBase):
 
 
 class SpotifyItemExternalUrls(BaseModel):
+    """
+    Represents external URLs associated with a Spotify item.
+
+    Attributes
+    ----------
+    spotify : str
+        The Spotify URL of the item.
+    """
+
     spotify: str
 
 
 class SpotifyItemImage(BaseModel):
+    """
+    Represents an image associated with a Spotify item.
+
+    Attributes
+    ----------
+    height : int
+        The height of the image in pixels.
+    width : int
+        The width of the image in pixels.
+    url : str
+        The URL of the image.
+    """
+
     height: int
     width: int
     url: str
 
 
 class SpotifyTrackAlbum(BaseModel):
+    """
+    Represents an album that a track belongs to.
+
+    Attributes
+    ----------
+    images : list[SpotifyItemImage]
+        A list of images representing the album cover.
+    release_date : str
+        The release date of the album.
+    """
+
     images: list[SpotifyItemImage]
     release_date: str
 
 
 class SpotifyTrackData(SpotifyItemBase):
+    """
+    Represents detailed metadata of a Spotify track.
+
+    Inherits from
+    -------------
+    SpotifyItemBase
+        Provides the `id` and `name` attributes.
+
+    Attributes
+    ----------
+    album : SpotifyTrackAlbum
+        The album the track belongs to.
+    artists : list[SpotifyTrackArtist]
+        A list of artists featured on the track.
+    external_urls : SpotifyItemExternalUrls
+        External URLs related to the track.
+    explicit : bool
+        Indicates whether the track contains explicit content.
+    duration_ms : int
+        The duration of the track in milliseconds.
+    popularity : int
+        The popularity score of the track (0-100).
+    """
+
     album: SpotifyTrackAlbum
     artists: list[SpotifyTrackArtist]
     external_urls: SpotifyItemExternalUrls
@@ -73,6 +130,24 @@ class SpotifyTrackData(SpotifyItemBase):
 
 
 class SpotifyArtistData(SpotifyItemBase):
+    """
+    Represents detailed metadata of a Spotify artist.
+
+    Inherits from
+    -------------
+    SpotifyItemBase
+        Provides the `id` and `name` attributes.
+
+    Attributes
+    ----------
+    images : list[SpotifyItemImage]
+        A list of images representing the artist.
+    external_urls : SpotifyItemExternalUrls
+        External URLs related to the artist.
+    genres : list[str]
+        A list of genres associated with the artist.
+    """
+
     images: list[SpotifyItemImage]
     external_urls: SpotifyItemExternalUrls
     genres: list[str]
@@ -84,14 +159,15 @@ class SpotifyItem(SpotifyItemBase):
 
     Inherits from
     -------------
-    SpotifyItemBase, which provides the id and name attributes.
+    SpotifyItemBase
+        Provides the `id` and `name` attributes.
 
     Attributes
     ----------
-    images : list[dict]
-        A list of image objects for the item.
+    images : list[SpotifyItemImage]
+        A list of images associated with the item.
     spotify_url : str
-        The Spotify URL for the item.
+        The Spotify URL of the item.
     """
 
     images: list[SpotifyItemImage]
@@ -104,7 +180,8 @@ class SpotifyArtist(SpotifyItem):
 
     Inherits from
     -------------
-    SpotifyItem, which provides the id, name, images and spotify_url attributes.
+    SpotifyItem
+        Provides the `id`, `name`, `images`, and `spotify_url` attributes.
 
     Attributes
     ----------
@@ -121,7 +198,8 @@ class SpotifyTrack(SpotifyItem):
 
     Inherits from
     -------------
-    SpotifyItem, which provides the id, name, images and spotify_url attributes.
+    SpotifyItem
+        Provides the `id`, `name`, `images`, and `spotify_url` attributes.
 
     Attributes
     ----------
@@ -213,11 +291,31 @@ class LyricsResponse(LyricsRequest):
 
 
 class AnalysisRequestBase(BaseModel):
+    """
+    Base class for requests related to track analysis.
+
+    Attributes
+    ----------
+    track_id : str
+        The unique identifier of the track.
+    lyrics : str
+        The lyrics of the track.
+    """
+
     track_id: str
     lyrics: str
 
 
 class EmotionalProfileRequest(AnalysisRequestBase):
+    """
+    Represents a request to analyze the emotional profile of a track.
+
+    Inherits from
+    -------------
+    AnalysisRequestBase
+        Provides the `track_id` and `lyrics` attributes.
+    """
+
     pass
 
 
@@ -288,7 +386,8 @@ class EmotionalProfileResponse(EmotionalProfileRequest):
 
     Inherits from
     -------------
-    AnalysisRequest, which provides the track_id and lyrics.
+    EmotionalProfileRequest
+        Provides the `track_id` and `lyrics` attributes.
 
     Attributes
     ----------
@@ -336,6 +435,43 @@ class TopEmotionsResponse(BaseModel):
 
 
 class Emotion(str, Enum):
+    """
+    Enum representing various emotions detected in track lyrics.
+
+    Attributes
+    ----------
+    JOY : str
+        Represents the emotion of joy.
+    SADNESS : str
+        Represents the emotion of sadness.
+    ANGER : str
+        Represents the emotion of anger.
+    FEAR : str
+        Represents the emotion of fear.
+    LOVE : str
+        Represents the emotion of love.
+    HOPE : str
+        Represents the emotion of hope.
+    NOSTALGIA : str
+        Represents the emotion of nostalgia.
+    LONELINESS : str
+        Represents the emotion of loneliness.
+    CONFIDENCE : str
+        Represents the emotion of confidence.
+    DESPAIR : str
+        Represents the emotion of despair.
+    EXCITEMENT : str
+        Represents the emotion of excitement.
+    MYSTERY : str
+        Represents the emotion of mystery.
+    DEFIANCE : str
+        Represents the emotion of defiance.
+    GRATITUDE : str
+        Represents the emotion of gratitude.
+    SPIRITUALITY : str
+        Represents the emotion of spirituality.
+    """
+
     JOY = "joy"
     SADNESS = "sadness"
     ANGER = "anger"
@@ -354,13 +490,47 @@ class Emotion(str, Enum):
 
 
 class EmotionalTagsRequest(AnalysisRequestBase):
+    """
+    Represents a request for emotional tags for a track.
+
+    Inherits from
+    -------------
+    AnalysisRequestBase
+        Provides the `track_id` and `lyrics` attributes.
+
+    Attributes
+    ----------
+    emotion : Emotion
+        The emotion being analyzed.
+    """
+
     emotion: Emotion
 
 
 class EmotionalTagsResponse(EmotionalTagsRequest):
+    """
+    Represents a response containing emotional tags for a track.
+
+    Inherits from
+    -------------
+    EmotionalTagsRequest
+        Provides the `track_id`, `lyrics`, and `emotion` attributes.
+    """
+
     pass
 
 
 class TaggedLyricsResponse(BaseModel):
+    """
+    Represents a response containing lyrics with emotional tags.
+
+    Attributes
+    ----------
+    lyrics_data : EmotionalTagsResponse
+        The analyzed emotional tags associated with the lyrics.
+    tokens : TokenData
+        The updated authentication tokens.
+    """
+
     lyrics_data: EmotionalTagsResponse
     tokens: TokenData
