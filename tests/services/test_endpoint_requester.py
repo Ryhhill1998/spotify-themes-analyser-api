@@ -83,7 +83,7 @@ async def test_http_status_error(endpoint_requester, mock_httpx_client, mock_res
     mock_httpx_client.request.return_value = mock_response_failure
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterException, match="Failed to make request"):
+    with pytest.raises(EndpointRequesterException, match="Request failed"):
         await method_to_test(TEST_URL)
 
 
@@ -95,7 +95,7 @@ async def test_unauthorised_error(endpoint_requester, mock_httpx_client, mock_re
     mock_httpx_client.request.return_value = mock_response_failure
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterUnauthorisedException, match="Unauthorised"):
+    with pytest.raises(EndpointRequesterUnauthorisedException, match="Unauthorised request"):
         await method_to_test(TEST_URL)
 
 
@@ -122,7 +122,7 @@ async def test_json_decode_error(endpoint_requester, mock_httpx_client, mock_res
 
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterException, match="Response not valid JSON."):
+    with pytest.raises(EndpointRequesterException, match="Invalid JSON response"):
         await method_to_test(TEST_URL)
 
 
@@ -130,11 +130,11 @@ async def test_json_decode_error(endpoint_requester, mock_httpx_client, mock_res
 @pytest.mark.asyncio
 async def test_timeout_error(endpoint_requester, mock_httpx_client, method):
     """Test that a request timeout raises EndpointRequesterException."""
-    mock_httpx_client.request.side_effect = httpx.TimeoutException("Request timed out")
+    mock_httpx_client.request.side_effect = httpx.TimeoutException("Request timeout")
 
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterException, match="Request timed out."):
+    with pytest.raises(EndpointRequesterException, match="Request timeout"):
         await method_to_test(TEST_URL)
 
 
@@ -146,7 +146,7 @@ async def test_request_error(endpoint_requester, mock_httpx_client, method):
 
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterException, match="Request failed: Request failed"):
+    with pytest.raises(EndpointRequesterException, match="Request failed"):
         await method_to_test(TEST_URL)
 
 
@@ -154,9 +154,9 @@ async def test_request_error(endpoint_requester, mock_httpx_client, method):
 @pytest.mark.asyncio
 async def test_invalid_url_error(endpoint_requester, mock_httpx_client, method):
     """Test that an invalid URL raises EndpointRequesterException."""
-    mock_httpx_client.request.side_effect = httpx.InvalidURL("Invalid URL provided")
+    mock_httpx_client.request.side_effect = httpx.InvalidURL("Invalid URL")
 
     method_to_test = getattr(endpoint_requester, method)
 
-    with pytest.raises(EndpointRequesterException, match="Invalid URL provided."):
+    with pytest.raises(EndpointRequesterException, match="Invalid URL"):
         await method_to_test(TEST_URL)

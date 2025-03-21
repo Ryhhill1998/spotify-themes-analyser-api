@@ -12,7 +12,7 @@ def test_get_artist_by_id_404(client, mock_spotify_data_service):
 
     res = client.get(f"{BASE_URL}/1")
 
-    assert res.status_code == 404 and "Could not find the requested item." in res.text
+    assert res.status_code == 404 and res.json() == {"detail": "Could not find the requested item"}
 
 
 def test_get_artist_by_id_500(client, mock_spotify_data_service):
@@ -20,7 +20,7 @@ def test_get_artist_by_id_500(client, mock_spotify_data_service):
 
     res = client.get(f"{BASE_URL}/1")
 
-    assert res.status_code == 500 and "Something went wrong." in res.text
+    assert res.status_code == 500 and res.json() == {"detail": "Failed to retrieve the requested item"}
 
 
 def test_get_artist_by_id_success(client, mock_spotify_data_service, mock_item_response):

@@ -26,7 +26,7 @@ def test_get_top_artists_500(client, mock_spotify_data_service):
 
     res = client.get(f"{BASE_URL}/artists")
 
-    assert res.status_code == 500 and "Something went wrong." in res.text
+    assert res.status_code == 500 and res.json() == {"detail": "Failed to retrieve the user's top items"}
 
 
 def test_get_top_artists_success(client, mock_spotify_data_service, mock_items_response):
@@ -52,7 +52,7 @@ def test_get_top_tracks_500(client, mock_spotify_data_service):
 
     res = client.get(f"{BASE_URL}/tracks")
 
-    assert res.status_code == 500 and "Something went wrong." in res.text
+    assert res.status_code == 500 and res.json() == {"detail": "Failed to retrieve the user's top items"}
 
 
 def test_get_top_tracks_success(client, mock_spotify_data_service, mock_items_response):
@@ -86,7 +86,7 @@ def test_get_top_emotions_500(client, mock_insights_service, mock_emotions_respo
 
     res = client.get(f"{BASE_URL}/emotions")
 
-    assert res.status_code == 500 and "Something went wrong." in res.text
+    assert res.status_code == 500 and res.json() == {"detail": "Failed to retrieve the user's top emotions"}
 
 
 def test_get_top_emotions_success(client, mock_insights_service, mock_emotions_response):
