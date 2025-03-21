@@ -1,6 +1,7 @@
 import base64
 import urllib.parse
 from functools import cached_property
+from loguru import logger
 
 import pydantic
 
@@ -161,9 +162,13 @@ class SpotifyAuthService(MusicService):
 
             return TokenData(access_token=access_token, refresh_token=refresh_token)
         except EndpointRequesterException as e:
-            raise SpotifyAuthServiceException(f"Spotify API token request failed - {e}")
+            error_message = f"Spotify API token request failed - {e}"
+            logger.exception(error_message)
+            raise SpotifyAuthServiceException(error_message)
         except pydantic.ValidationError as e:
-            raise SpotifyAuthServiceException(f"Failed to validate tokens - {e}")
+            error_message = f"Failed to validate tokens - {e}"
+            logger.exception(error_message)
+            raise SpotifyAuthServiceException(error_message)
 
     async def create_tokens(self, auth_code: str) -> TokenData:
         """

@@ -1,5 +1,6 @@
 from enum import Enum
 import urllib.parse
+from loguru import logger
 
 import pydantic
 
@@ -237,15 +238,17 @@ class SpotifyDataService(MusicService):
             elif item_type == ItemType.ARTISTS:
                 return self._create_artist(data=data)
             else:
-                raise SpotifyDataServiceException(f"Invalid item_type: {item_type}")
+                error_message = f"Invalid item_type: {item_type}"
+                logger.error(error_message)
+                raise SpotifyDataServiceException(error_message)
         except TypeError as e:
-            print(e)
-            raise SpotifyDataServiceException(f"Spotify data not of type dict. Actual type: {type(data)}")
+            error_message = f"Spotify data not of type dict. Actual type: {type(data)} - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceException(error_message)
         except pydantic.ValidationError as e:
-            print(f"Failed to create TopItem from Spotify API data - {e}")
-            raise SpotifyDataServiceException(
-                f"Failed to create TopItem from Spotify API data: {data}, type: {item_type} - {e}"
-            )
+            error_message = f"Failed to create TopItem from Spotify API data: {data}, type: {item_type} - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceException(error_message)
 
     async def _get_top_items(
             self,
@@ -347,9 +350,13 @@ class SpotifyDataService(MusicService):
 
             return top_items_response
         except EndpointRequesterException as e:
-            raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")
+            error_message = f"Request to Spotify API failed - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceException(error_message)
         except SpotifyAuthServiceException as e:
-            raise SpotifyDataServiceException(f"Failed to refresh access token - {e}")
+            error_message = f"Failed to refresh access token - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceException(error_message)
 
     async def _get_item_by_id(self, access_token: str, item_id: str, item_type: ItemType) -> SpotifyItem:
         """
@@ -435,9 +442,15 @@ class SpotifyDataService(MusicService):
             item_response = SpotifyItemResponse(data=item, tokens=tokens)
 
             return item_response
-        except EndpointRequesterNotFoundException:
-            raise SpotifyDataServiceNotFoundException(f"Requested item not found - ID: {item_id}, type: {item_type}")
+        except EndpointRequesterNotFoundException as e:
+            error_message = f"Requested item not found. ID: {item_id}, type: {item_type} - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceNotFoundException(error_message)
         except EndpointRequesterException as e:
-            raise SpotifyDataServiceException(f"Request to Spotify API failed - {e}")
+            error_message = f"Request to Spotify API failed - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceException(error_message)
         except SpotifyAuthServiceException as e:
-            raise SpotifyDataServiceException(f"Failed to refresh access token - {e}")
+            error_message = f"Failed to refresh access token - {e}"
+            logger.exception(error_message)
+            raise SpotifyDataServiceException(error_message)
