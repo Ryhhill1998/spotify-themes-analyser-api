@@ -1,6 +1,9 @@
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
+from pydantic import Field
 
 from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
 from api.routers.utils import create_json_response_and_set_token_cookies, get_top_items_response
@@ -28,7 +31,8 @@ async def get_profile(
 @router.get("/top/artists")
 async def get_top_artists(
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency
+        spotify_data_service: SpotifyDataServiceDependency,
+        limit: Annotated[int, Field(ge=10, le=50)] = 50
 ) -> JSONResponse:
     """
     Retrieves the user's top artists from Spotify.
@@ -39,6 +43,8 @@ async def get_top_artists(
         Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the user's top artists from the Spotify API.
+    limit : int
+        Limit to specify the number of top artists to retrieve (default is 50, must be at least 10 but no more than 50).
 
     Returns
     -------
@@ -55,7 +61,8 @@ async def get_top_artists(
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
         tokens=tokens,
-        item_type=ItemType.ARTISTS
+        item_type=ItemType.ARTISTS,
+        limit=limit
     )
 
     return response
@@ -64,7 +71,8 @@ async def get_top_artists(
 @router.get("/top/tracks")
 async def get_top_tracks(
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency
+        spotify_data_service: SpotifyDataServiceDependency,
+        limit: Annotated[int, Field(ge=10, le=50)] = 50
 ) -> JSONResponse:
     """
     Retrieves the user's top tracks from Spotify.
@@ -75,6 +83,8 @@ async def get_top_tracks(
         Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the user's top tracks from the Spotify API.
+    limit : int
+        Limit to specify the number of top tracks to retrieve (default is 50, must be at least 10 but no more than 50).
 
     Returns
     -------
@@ -91,7 +101,8 @@ async def get_top_tracks(
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
         tokens=tokens,
-        item_type=ItemType.TRACKS
+        item_type=ItemType.TRACKS,
+        limit=limit
     )
 
     return response

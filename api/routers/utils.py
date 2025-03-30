@@ -90,7 +90,8 @@ async def get_item_response(
 async def get_top_items_response(
         spotify_data_service: SpotifyDataService,
         tokens: TokenData,
-        item_type: ItemType
+        item_type: ItemType,
+        limit: int
 ) -> JSONResponse:
     """
     Retrieves a user's top items (tracks or artists) from Spotify.
@@ -103,6 +104,8 @@ async def get_top_items_response(
         The access and refresh tokens for authentication.
     item_type : ItemType
         The type of items to retrieve (TRACKS or ARTISTS).
+    limit : int
+        Limit to specify the number of top items to retrieve.
 
     Returns
     -------
@@ -119,7 +122,8 @@ async def get_top_items_response(
     try:
         top_items_response = await spotify_data_service.get_top_items(
             tokens=tokens,
-            item_type=item_type
+            item_type=item_type,
+            limit=limit
         )
         tokens = top_items_response.tokens
 
