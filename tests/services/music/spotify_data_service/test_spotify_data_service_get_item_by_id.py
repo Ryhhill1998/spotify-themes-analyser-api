@@ -1,6 +1,6 @@
 import pytest
 
-from api.models import SpotifyTrack, SpotifyTrackArtist, SpotifyItemImage, SpotifyArtist, SpotifyItemResponse
+from api.models import SpotifyTrack, SpotifyTrackArtist, SpotifyImage, SpotifyArtist, SpotifyItemResponse
 from api.services.endpoint_requester import EndpointRequesterException, EndpointRequesterUnauthorisedException, \
     EndpointRequesterNotFoundException
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
@@ -203,7 +203,7 @@ async def test_get_item_by_id_track_success(
         id="1",
         name=f"Track 0",
         images=[
-            SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+            SpotifyImage(height=640, width=640, url="http://image-url.com")
         ],
         spotify_url="http://spotify-test-url.com",
         artist=SpotifyTrackArtist(id="1", name="Artist 1"),
@@ -284,7 +284,7 @@ async def test_get_item_by_id_artist_success(
         id="1",
         name=f"Artist 1",
         images=[
-            SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+            SpotifyImage(height=640, width=640, url="http://image-url.com")
         ],
         spotify_url="http://spotify-test-url.com",
         genres=["genre1", "genre2"]

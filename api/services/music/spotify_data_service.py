@@ -5,7 +5,7 @@ from loguru import logger
 import pydantic
 
 from api.models import SpotifyItemsResponse, SpotifyItem, SpotifyTrack, SpotifyArtist, TokenData, SpotifyTrackArtist, \
-    SpotifyItemResponse, SpotifyTrackData, SpotifyArtistData
+    SpotifyItemResponse, SpotifyTrackData, SpotifyArtistData, SpotifyProfile, SpotifyProfileResponse
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
     EndpointRequesterNotFoundException, EndpointRequesterException
 from api.services.music.music_service import MusicService
@@ -100,7 +100,6 @@ class SpotifyDataService(MusicService):
         Retrieves a specific track or artist by its unique identifier, handling authentication and errors.
     """
 
-
     def __init__(
             self,
             client_id: str,
@@ -131,6 +130,26 @@ class SpotifyDataService(MusicService):
             endpoint_requester=endpoint_requester
         )
         self.spotify_auth_service = spotify_auth_service
+
+    async def _get_profile_data(self, access_token: str) -> SpotifyProfile:
+        url = f"{self.base_url}/me"
+
+        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+        print("hello!", f"{data = }")
+
+        return SpotifyProfile(**data)
+
+    async def get_profile_data(self, tokens: TokenData) -> SpotifyProfileResponse:
+        try:
+            profile_data = await self._get_profile_data(tokens.access_token)
+        except EndpointRequesterUnauthorisedException as e:
+            print(e)
+            tokens = await self.spotify_auth_service.refresh_tokens(tokens.refresh_token)
+            profile_data = await self._get_profile_data(tokens.access_token)
+
+        profile_response = SpotifyProfileResponse(profile=profile_data, tokens=tokens)
+
+        return profile_response
 
     @staticmethod
     def _create_track(data: dict) -> SpotifyTrack:
@@ -165,6 +184,7 @@ class SpotifyDataService(MusicService):
             id=track_data.id,
             name=track_data.name,
             images=album.images,
+            album_name=album.name,
             spotify_url=track_data.external_urls.spotify,
             artist=track_artist,
             release_date=album.release_date,
@@ -300,7 +320,7 @@ class SpotifyDataService(MusicService):
             tokens: TokenData,
             item_type: ItemType,
             time_range: TimeRange = TimeRange.MEDIUM,
-            limit: int = 10
+            limit: int = 50
     ) -> SpotifyItemsResponse:
         """
         Retrieves the top items (tracks or artists) for a user.

@@ -10,6 +10,21 @@ from api.services.music.spotify_data_service import ItemType
 router = APIRouter(prefix="/me")
 
 
+@router.get("/profile")
+async def get_profile(
+        tokens: TokenCookieExtractionDependency,
+        spotify_data_service: SpotifyDataServiceDependency
+) -> JSONResponse:
+    profile_data = await spotify_data_service.get_profile_data(tokens)
+    tokens = profile_data.tokens
+
+    response_content = profile_data.profile.model_dump()
+    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+
+    return response
+
+
+
 @router.get("/top/artists")
 async def get_top_artists(
         tokens: TokenCookieExtractionDependency,

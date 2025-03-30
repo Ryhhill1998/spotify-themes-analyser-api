@@ -9,7 +9,7 @@ from api.models import (
     SpotifyTrackArtist,
     TopEmotionsResponse,
     TopEmotion,
-    SpotifyItemImage
+    SpotifyImage
 )
 from api.services.analysis_service import AnalysisServiceException
 from api.services.insights_service import InsightsServiceException
@@ -28,7 +28,7 @@ def mock_spotify_data(mock_request_tokens) -> SpotifyItemsResponse:
             id="1",
             name="Track 1",
             images=[
-                SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+                SpotifyImage(height=640, width=640, url="http://image-url.com")
             ],
             spotify_url="http://spotify-test-url.com",
             artist=SpotifyTrackArtist(id="1", name=f"Artist 1"),
@@ -41,7 +41,7 @@ def mock_spotify_data(mock_request_tokens) -> SpotifyItemsResponse:
             id="2",
             name="Track 2",
             images=[
-                SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+                SpotifyImage(height=640, width=640, url="http://image-url.com")
             ],
             spotify_url="http://spotify-test-url.com",
             artist=SpotifyTrackArtist(id="2", name=f"Artist 2"),

@@ -23,10 +23,11 @@ def initialise_logger():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    initialise_logger()
+
     client = httpx.AsyncClient()
 
     try:
-        initialise_logger()
         app.state.endpoint_requester = EndpointRequester(client)
 
         yield
@@ -70,6 +71,8 @@ async def log_requests(request: Request, call_next):
     log_message = f"{ip_addr}:{port} made {req_method} request to {url}."
 
     logger.info(log_message)
+
+    logger.info(f"Cookies: {request.cookies}")
 
     response = await call_next(request)
     return response

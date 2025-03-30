@@ -6,7 +6,7 @@ from api.models import (
     LyricsResponse,
     SpotifyTrack,
     SpotifyTrackArtist,
-    SpotifyItemImage, SpotifyItemResponse, EmotionalTagsResponse, Emotion, TaggedLyricsResponse
+    SpotifyImage, SpotifyItemResponse, EmotionalTagsResponse, Emotion, TaggedLyricsResponse
 )
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.insights_service import InsightsService, InsightsServiceException
@@ -55,7 +55,7 @@ def mock_spotify_data(mock_request_tokens) -> SpotifyItemResponse:
         id="1",
         name="Track 1",
         images=[
-            SpotifyItemImage(height=640, width=640, url="http://image-url.com")
+            SpotifyImage(height=640, width=640, url="http://image-url.com")
         ],
         spotify_url="http://spotify-test-url.com",
         artist=SpotifyTrackArtist(id="1", name=f"Artist 1"),

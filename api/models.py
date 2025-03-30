@@ -18,6 +18,43 @@ class TokenData(BaseModel):
     refresh_token: str
 
 
+class SpotifyImage(BaseModel):
+    """
+    Represents an image associated with a Spotify item.
+
+    Attributes
+    ----------
+    height : int
+        The height of the image in pixels.
+    width : int
+        The width of the image in pixels.
+    url : str
+        The URL of the image.
+    """
+
+    height: int
+    width: int
+    url: str
+
+
+class SpotifyProfileFollowers(BaseModel):
+    total: int
+
+
+class SpotifyProfile(BaseModel):
+    id: str
+    display_name: str
+    email: str | None = None
+    href: str
+    images: list[SpotifyImage]
+    followers: SpotifyProfileFollowers
+
+
+class SpotifyProfileResponse(BaseModel):
+    profile: SpotifyProfile
+    tokens: TokenData
+
+
 class SpotifyItemBase(BaseModel):
     """
     The most basic form of a Spotify item (e.g., artist or track).
@@ -61,38 +98,20 @@ class SpotifyItemExternalUrls(BaseModel):
     spotify: str
 
 
-class SpotifyItemImage(BaseModel):
-    """
-    Represents an image associated with a Spotify item.
-
-    Attributes
-    ----------
-    height : int
-        The height of the image in pixels.
-    width : int
-        The width of the image in pixels.
-    url : str
-        The URL of the image.
-    """
-
-    height: int
-    width: int
-    url: str
-
-
 class SpotifyTrackAlbum(BaseModel):
     """
     Represents an album that a track belongs to.
 
     Attributes
     ----------
-    images : list[SpotifyItemImage]
+    images : list[SpotifyImage]
         A list of images representing the album cover.
     release_date : str
         The release date of the album.
     """
 
-    images: list[SpotifyItemImage]
+    name: str
+    images: list[SpotifyImage]
     release_date: str
 
 
@@ -140,7 +159,7 @@ class SpotifyArtistData(SpotifyItemBase):
 
     Attributes
     ----------
-    images : list[SpotifyItemImage]
+    images : list[SpotifyImage]
         A list of images representing the artist.
     external_urls : SpotifyItemExternalUrls
         External URLs related to the artist.
@@ -148,7 +167,7 @@ class SpotifyArtistData(SpotifyItemBase):
         A list of genres associated with the artist.
     """
 
-    images: list[SpotifyItemImage]
+    images: list[SpotifyImage]
     external_urls: SpotifyItemExternalUrls
     genres: list[str]
 
@@ -164,13 +183,13 @@ class SpotifyItem(SpotifyItemBase):
 
     Attributes
     ----------
-    images : list[SpotifyItemImage]
+    images : list[SpotifyImage]
         A list of images associated with the item.
     spotify_url : str
         The Spotify URL of the item.
     """
 
-    images: list[SpotifyItemImage]
+    images: list[SpotifyImage]
     spotify_url: str
 
 
@@ -217,6 +236,7 @@ class SpotifyTrack(SpotifyItem):
 
     artist: SpotifyTrackArtist
     release_date: str
+    album_name: str
     explicit: bool
     duration_ms: int
     popularity: int
