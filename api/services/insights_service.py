@@ -8,7 +8,7 @@ from api.models import TokenData, LyricsRequest, TopEmotionsResponse, TopEmotion
     EmotionalTagsResponse
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
-from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException
+from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException, TimeRange
 
 
 class InsightsServiceException(Exception):
@@ -165,7 +165,7 @@ class InsightsService:
             logger.error(error_message)
             raise InsightsServiceException(error_message)
 
-    async def _fetch_top_tracks(self, tokens: TokenData) -> tuple[list[SpotifyTrack], TokenData]:
+    async def _fetch_top_tracks(self, tokens: TokenData, time_range: TimeRange) -> tuple[list[SpotifyTrack], TokenData]:
         """
         Fetches the user's top tracks from Spotify.
 
@@ -187,7 +187,11 @@ class InsightsService:
             If no top tracks are found, an exception is raised.
         """
 
-        top_tracks_response = await self.spotify_data_service.get_top_items(tokens=tokens, item_type=ItemType.TRACKS)
+        top_tracks_response = await self.spotify_data_service.get_top_items(
+            tokens=tokens,
+            item_type=ItemType.TRACKS,
+            time_range=time_range
+        )
         top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_tracks_response.data]
         self._check_data_not_empty(data=top_tracks, label="top tracks")
         tokens = top_tracks_response.tokens
@@ -284,7 +288,7 @@ class InsightsService:
         top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
         return top_emotions
 
-    async def get_top_emotions(self, tokens: TokenData, limit: int = 5) -> TopEmotionsResponse:
+    async def get_top_emotions(self, tokens: TokenData, time_range: TimeRange, limit: int = 5) -> TopEmotionsResponse:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
 
@@ -315,7 +319,7 @@ class InsightsService:
 
         try:
             # get top tracks and refreshed tokens (if expired)
-            top_tracks, tokens = await self._fetch_top_tracks(tokens)
+            top_tracks, tokens = await self._fetch_top_tracks(tokens=tokens, time_range=time_range)
 
             # get lyrics for each track
             lyrics_list = await self._fetch_lyrics_list(top_tracks)

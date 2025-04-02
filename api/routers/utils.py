@@ -4,7 +4,7 @@ from loguru import logger
 
 from api.models import TokenData
 from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException, \
-    SpotifyDataService, ItemType
+    SpotifyDataService, ItemType, TimeRange
 
 
 def set_response_cookie(response: Response, key: str, value: str):
@@ -91,6 +91,7 @@ async def get_top_items_response(
         spotify_data_service: SpotifyDataService,
         tokens: TokenData,
         item_type: ItemType,
+        time_range: TimeRange,
         limit: int
 ) -> JSONResponse:
     """
@@ -123,6 +124,7 @@ async def get_top_items_response(
         top_items_response = await spotify_data_service.get_top_items(
             tokens=tokens,
             item_type=item_type,
+            time_range=time_range,
             limit=limit
         )
         tokens = top_items_response.tokens
