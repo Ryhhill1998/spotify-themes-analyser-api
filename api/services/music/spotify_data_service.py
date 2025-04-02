@@ -233,7 +233,8 @@ class SpotifyDataService(MusicService):
             images=artist_data.images,
             spotify_url=artist_data.external_urls.spotify,
             genres=artist_data.genres,
-            followers=artist_data.followers.total
+            followers=artist_data.followers.total,
+            popularity=artist_data.popularity
         )
 
         return top_artist

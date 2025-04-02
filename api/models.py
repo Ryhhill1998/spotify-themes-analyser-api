@@ -178,6 +178,7 @@ class SpotifyArtistData(SpotifyItemBase):
     external_urls: SpotifyItemExternalUrls
     followers: SpotifyProfileFollowers
     genres: list[str]
+    popularity: int
 
 
 class SpotifyItem(SpotifyItemBase):
@@ -218,6 +219,7 @@ class SpotifyArtist(SpotifyItem):
 
     genres: list[str]
     followers: int
+    popularity: int
 
 
 class SpotifyTrack(SpotifyItem):
