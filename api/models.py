@@ -41,21 +41,19 @@ class SpotifyProfileFollowers(BaseModel):
     total: int
 
 
-class SpotifyProfileData(BaseModel):
+class SpotifyProfileBase(BaseModel):
     id: str
     display_name: str
     email: str | None = None
     href: str
     images: list[SpotifyImage]
+
+
+class SpotifyProfileData(SpotifyProfileBase):
     followers: SpotifyProfileFollowers
 
 
-class SpotifyProfile(BaseModel):
-    id: str
-    display_name: str
-    email: str | None = None
-    href: str
-    images: list[SpotifyImage]
+class SpotifyProfile(SpotifyProfileBase):
     followers: int
 
 
