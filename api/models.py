@@ -41,13 +41,22 @@ class SpotifyProfileFollowers(BaseModel):
     total: int
 
 
-class SpotifyProfile(BaseModel):
+class SpotifyProfileData(BaseModel):
     id: str
     display_name: str
     email: str | None = None
     href: str
     images: list[SpotifyImage]
     followers: SpotifyProfileFollowers
+
+
+class SpotifyProfile(BaseModel):
+    id: str
+    display_name: str
+    email: str | None = None
+    href: str
+    images: list[SpotifyImage]
+    followers: int
 
 
 class SpotifyProfileResponse(BaseModel):
@@ -169,6 +178,7 @@ class SpotifyArtistData(SpotifyItemBase):
 
     images: list[SpotifyImage]
     external_urls: SpotifyItemExternalUrls
+    followers: SpotifyProfileFollowers
     genres: list[str]
 
 
@@ -209,6 +219,7 @@ class SpotifyArtist(SpotifyItem):
     """
 
     genres: list[str]
+    followers: int
 
 
 class SpotifyTrack(SpotifyItem):

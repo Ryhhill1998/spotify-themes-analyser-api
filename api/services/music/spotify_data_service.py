@@ -5,7 +5,7 @@ from loguru import logger
 import pydantic
 
 from api.models import SpotifyItemsResponse, SpotifyItem, SpotifyTrack, SpotifyArtist, TokenData, SpotifyTrackArtist, \
-    SpotifyItemResponse, SpotifyTrackData, SpotifyArtistData, SpotifyProfile, SpotifyProfileResponse
+    SpotifyItemResponse, SpotifyTrackData, SpotifyArtistData, SpotifyProfile, SpotifyProfileResponse, SpotifyProfileData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
     EndpointRequesterNotFoundException, EndpointRequesterException
 from api.services.music.music_service import MusicService
@@ -135,9 +135,16 @@ class SpotifyDataService(MusicService):
         url = f"{self.base_url}/me"
 
         data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
-        print("hello!", f"{data = }")
 
-        return SpotifyProfile(**data)
+        profile_data = SpotifyProfileData(**data)
+        return SpotifyProfile(
+            id=profile_data.id,
+            display_name=profile_data.display_name,
+            email=profile_data.email,
+            href=profile_data.href,
+            images=profile_data.images,
+            followers=profile_data.followers.total
+        )
 
     async def get_profile_data(self, tokens: TokenData) -> SpotifyProfileResponse:
         try:
@@ -225,7 +232,8 @@ class SpotifyDataService(MusicService):
             name=artist_data.name,
             images=artist_data.images,
             spotify_url=artist_data.external_urls.spotify,
-            genres=artist_data.genres
+            genres=artist_data.genres,
+            followers=artist_data.followers.total
         )
 
         return top_artist
