@@ -102,14 +102,7 @@ async def callback(
         error_params = urllib.parse.urlencode({"error": "auth-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
-    # return RedirectResponse(f"{settings.frontend_url}/auth-success/?code={code}")
-    tokens = await spotify_auth_service.create_tokens(code)
-
-    response = create_custom_redirect_response(settings.frontend_url + "/login/?success=true")
-    response.set_cookie(key="access_token", value=tokens.access_token, secure=True, samesite="none", path="/")
-    response.set_cookie(key="refresh_token", value=tokens.refresh_token, secure=True, samesite="none", path="/")
-
-    return response
+    return RedirectResponse(f"{settings.frontend_url}/auth-success/?code={code}")
 
 
 @router.post("/tokens", response_model=TokenData)
