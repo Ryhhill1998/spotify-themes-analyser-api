@@ -54,7 +54,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency, settings: Se
     url = spotify_auth_service.generate_auth_url(state)
 
     response = create_custom_redirect_response(url)
-    set_response_cookie(response=response, key="oauth_state", value=state, domain=settings.domain)
+    set_response_cookie(response=response, key="oauth_state", value=state)
 
     return response
 
@@ -117,7 +117,7 @@ async def callback(
 
 @router.get("/cookies")
 def test_set_cookies(settings: SettingsDependency):
-    response = JSONResponse(content={"detail": "testing set cookies"})
+    response = RedirectResponse(settings.frontend_url)
     set_response_cookie(response=response, key="cookie1", value="val1", domain=settings.domain)
     set_response_cookie(response=response, key="cookie2", value="val2", domain=settings.domain)
 

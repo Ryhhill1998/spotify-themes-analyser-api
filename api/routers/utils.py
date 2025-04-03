@@ -7,7 +7,7 @@ from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundEx
     SpotifyDataService, ItemType, TimeRange
 
 
-def set_response_cookie(response: Response, key: str, value: str, domain: str):
+def set_response_cookie(response: Response, key: str, value: str, domain: str | None = None):
     response.set_cookie(key=key, value=value, httponly=True, secure=True, samesite="none", path="/", domain=domain)
 
 
