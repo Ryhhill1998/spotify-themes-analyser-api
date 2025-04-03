@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.dependencies import SpotifyDataServiceDependency, InsightsServiceDependency
 from api.models import Emotion, EmotionalTagsResponse, SpotifyTrack
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import ItemType, SpotifyDataServiceNotFoundException, \
@@ -12,11 +12,7 @@ router = APIRouter(prefix="/tracks")
 
 
 @router.get("/{track_id}", response_model=SpotifyTrack)
-async def get_track_by_id(
-        track_id: str,
-        tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency
-) -> SpotifyTrack:
+async def get_track_by_id(track_id: str, spotify_data_service: SpotifyDataServiceDependency) -> SpotifyTrack:
     """
     Retrieves details about a specific track by its ID.
 
@@ -24,8 +20,6 @@ async def get_track_by_id(
     ----------
     track_id : str
         The Spotify track ID.
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the track data from the Spotify API.
 
@@ -43,11 +37,7 @@ async def get_track_by_id(
     """
 
     try:
-        track = await spotify_data_service.get_item_by_id(
-            access_token=tokens.access_token,
-            item_id=track_id,
-            item_type=ItemType.TRACKS
-        )
+        track = await spotify_data_service.get_item_by_id(item_id=track_id, item_type=ItemType.TRACKS)
         return track
     except SpotifyDataServiceNotFoundException as e:
         error_message = "Could not find the requested track"
@@ -63,7 +53,6 @@ async def get_track_by_id(
 async def get_lyrics_tagged_with_emotion(
         track_id: str,
         emotion: Emotion,
-        tokens: TokenCookieExtractionDependency,
         insights_service: InsightsServiceDependency
 ) -> EmotionalTagsResponse:
     """
@@ -73,8 +62,6 @@ async def get_lyrics_tagged_with_emotion(
     ----------
     track_id : str
         The ID of the track being requested.
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
     emotion : Emotion
         The emotion requested to tag the lyrics with.
     insights_service : InsightsServiceDependency
@@ -93,12 +80,7 @@ async def get_lyrics_tagged_with_emotion(
     """
 
     try:
-        tagged_lyrics_response = await insights_service.tag_lyrics_with_emotion(
-            track_id=track_id,
-            emotion=emotion,
-            tokens=tokens
-        )
-
+        tagged_lyrics_response = await insights_service.tag_lyrics_with_emotion(track_id=track_id, emotion=emotion)
         return tagged_lyrics_response
     except InsightsServiceException as e:
         error_message = "Failed to tag lyrics with requested emotion"
