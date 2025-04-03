@@ -2,19 +2,20 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency
+from api.dependencies import AccessTokenDependency, SpotifyDataServiceDependency
+from api.models import SpotifyArtist
 from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException, \
     ItemType
 
 router = APIRouter(prefix="/artists")
 
 
-@router.get("/{artist_id}")
+@router.get("/{artist_id}", response_model=SpotifyArtist)
 async def get_artist_by_id(
         artist_id: str,
-        tokens: TokenCookieExtractionDependency,
+        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency
-) -> JSONResponse:
+) -> SpotifyArtist:
     """
     Retrieves details about a specific artist by their ID.
 
@@ -22,8 +23,8 @@ async def get_artist_by_id(
     ----------
     artist_id : str
         The Spotify artist ID.
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
+    access_token : AccessTokenDependency
+        Dependency that extracts access token from cookies.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the artist data from the Spotify API.
 
@@ -42,7 +43,7 @@ async def get_artist_by_id(
 
     try:
         artist = await spotify_data_service.get_item_by_id(
-            access_token=tokens.access_token,
+            access_token=access_token,
             item_id=artist_id,
             item_type=ItemType.ARTISTS
         )

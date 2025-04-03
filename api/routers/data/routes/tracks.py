@@ -11,7 +11,7 @@ from api.services.music.spotify_data_service import ItemType, SpotifyDataService
 router = APIRouter(prefix="/tracks")
 
 
-@router.get("/{track_id}")
+@router.get("/{track_id}", response_model=SpotifyTrack)
 async def get_track_by_id(
         track_id: str,
         tokens: TokenCookieExtractionDependency,

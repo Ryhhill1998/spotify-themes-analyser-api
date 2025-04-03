@@ -5,38 +5,31 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import Field
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency, \
-    SettingsDependency
-from api.routers.utils import create_json_response_and_set_token_cookies, get_top_items_response
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.models import SpotifyArtist, SpotifyProfile
 from api.services.insights_service import InsightsServiceException
-from api.services.music.spotify_data_service import ItemType, TimeRange
+from api.services.music.spotify_data_service import ItemType, TimeRange, SpotifyDataServiceException, \
+    SpotifyDataServiceUnauthorisedException
 
 router = APIRouter(prefix="/me")
 
 
-@router.get("/profile")
+@router.get("/profile", response_model=SpotifyProfile)
 async def get_profile(
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency,
-        settings: SettingsDependency
-) -> JSONResponse:
+        spotify_data_service: SpotifyDataServiceDependency
+) -> SpotifyProfile:
     profile_data = await spotify_data_service.get_profile_data(tokens)
-    tokens = profile_data.tokens
-
-    response_content = profile_data.profile.model_dump()
-    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens, domain=settings.domain)
-
-    return response
+    return profile_data
 
 
-@router.get("/top/artists")
+@router.get("/top/artists", response_model=list[SpotifyArtist])
 async def get_top_artists(
         tokens: TokenCookieExtractionDependency,
         spotify_data_service: SpotifyDataServiceDependency,
-        settings: SettingsDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
-) -> JSONResponse:
+) -> list[SpotifyArtist]:
     """
     Retrieves the user's top artists from Spotify.
 
@@ -61,23 +54,28 @@ async def get_top_artists(
         artists from Spotify.
     """
 
-    response = await get_top_items_response(
-        spotify_data_service=spotify_data_service,
-        domain=settings.domain,
-        tokens=tokens,
-        item_type=ItemType.ARTISTS,
-        time_range=time_range,
-        limit=limit
-    )
-
-    return response
+    try:
+        top_artists = await spotify_data_service.get_top_items(
+            access_token=tokens.access_token,
+            item_type=ItemType.ARTISTS,
+            time_range=time_range,
+            limit=limit
+        )
+        return top_artists
+    except SpotifyDataServiceUnauthorisedException as e:
+        error_message = "Invalid access token"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_message)
+    except SpotifyDataServiceException as e:
+        error_message = "Failed to retrieve the user's top artists"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)
 
 
 @router.get("/top/tracks")
 async def get_top_tracks(
         tokens: TokenCookieExtractionDependency,
         spotify_data_service: SpotifyDataServiceDependency,
-        settings: SettingsDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
 ) -> JSONResponse:
@@ -105,23 +103,28 @@ async def get_top_tracks(
         tracks from Spotify.
     """
 
-    response = await get_top_items_response(
-        spotify_data_service=spotify_data_service,
-        domain=settings.domain,
-        tokens=tokens,
-        item_type=ItemType.TRACKS,
-        time_range=time_range,
-        limit=limit
-    )
-
-    return response
+    try:
+        top_tracks = await spotify_data_service.get_top_items(
+            access_token=tokens.access_token,
+            item_type=ItemType.TRACKS,
+            time_range=time_range,
+            limit=limit
+        )
+        return top_tracks
+    except SpotifyDataServiceUnauthorisedException as e:
+        error_message = "Invalid access token"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_message)
+    except SpotifyDataServiceException as e:
+        error_message = "Failed to retrieve the user's top tracks"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)
 
 
 @router.get("/top/emotions")
 async def get_top_emotions(
         tokens: TokenCookieExtractionDependency,
         insights_service: InsightsServiceDependency,
-        settings: SettingsDependency,
         time_range: TimeRange
 ) -> JSONResponse:
     """
@@ -147,14 +150,8 @@ async def get_top_emotions(
     """
 
     try:
-        top_emotions_response = await insights_service.get_top_emotions(tokens=tokens, time_range=time_range)
-        top_emotions = top_emotions_response.top_emotions
-        tokens = top_emotions_response.tokens
-
-        response_content = [emotion.model_dump() for emotion in top_emotions]
-        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens, domain=settings.domain)
-
-        return response
+        top_emotions = await insights_service.get_top_emotions(tokens=tokens, time_range=time_range)
+        return top_emotions
     except InsightsServiceException as e:
         error_message = "Failed to retrieve the user's top emotions"
         logger.error(f"{error_message} - {e}")

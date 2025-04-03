@@ -2,9 +2,7 @@ from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, Request, HTTPException
-from loguru import logger
 
-from api.models import TokenData
 from api.services.analysis_service import AnalysisService
 from api.services.insights_service import InsightsService
 from api.services.endpoint_requester import EndpointRequester
@@ -22,18 +20,28 @@ def get_settings() -> Settings:
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 
 
-def get_tokens_from_cookies(request: Request) -> TokenData:
+def get_token_from_cookies(request: Request, token_key: str) -> str:
     cookies = request.cookies
-    access_token = cookies.get("access_token")
-    refresh_token = cookies.get("refresh_token")
+    token = cookies.get(token_key)
 
-    if not access_token or not refresh_token:
-        raise HTTPException(status_code=401, detail="Requests must include an access token and a refresh token.")
+    if not token:
+        raise HTTPException(status_code=401, detail="Requests must include an access token.")
 
-    return TokenData(access_token=access_token, refresh_token=refresh_token)
+    return token
 
 
-TokenCookieExtractionDependency = Annotated[TokenData, Depends(get_tokens_from_cookies)]
+def get_access_token_from_cookies(request: Request) -> str:
+    return get_token_from_cookies(request=request, token_key="access_token")
+
+
+AccessTokenDependency = Annotated[str, Depends(get_access_token_from_cookies)]
+
+
+def get_refresh_token_from_cookies(request: Request) -> str:
+    return get_token_from_cookies(request=request, token_key="refresh_token")
+
+
+RefreshTokenDependency = Annotated[str, Depends(get_refresh_token_from_cookies)]
 
 
 def get_endpoint_requester(request: Request) -> EndpointRequester:
