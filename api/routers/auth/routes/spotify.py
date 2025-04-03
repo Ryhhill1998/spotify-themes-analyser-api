@@ -9,7 +9,6 @@ from loguru import logger
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
 from api.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
-from api.routers.utils import set_response_cookie
 
 router = APIRouter(prefix="/spotify")
 
@@ -33,7 +32,7 @@ def create_custom_redirect_response(redirect_url: str) -> Response:
 
 
 @router.get("/login")
-async def login(spotify_auth_service: SpotifyAuthServiceDependency, settings: SettingsDependency):
+async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     """
     Initiates the Spotify login process.
 
@@ -55,7 +54,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency, settings: Se
     url = spotify_auth_service.generate_auth_url(state)
 
     response = create_custom_redirect_response(url)
-    set_response_cookie(response=response, key="oauth_state", value=state)
+    response.set_cookie(key="oauth_state", value=state)
 
     return response
 
@@ -65,7 +64,8 @@ async def callback(
         code: str,
         state: str,
         request: Request,
-        settings: SettingsDependency
+        settings: SettingsDependency,
+        spotify_auth_service: SpotifyAuthServiceDependency
 ):
     """
     Handles the OAuth callback from Spotify.
@@ -102,7 +102,14 @@ async def callback(
         error_params = urllib.parse.urlencode({"error": "auth-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
-    return RedirectResponse(f"{settings.frontend_url}/auth-success/?code={code}")
+    # return RedirectResponse(f"{settings.frontend_url}/auth-success/?code={code}")
+    tokens = await spotify_auth_service.create_tokens(code)
+
+    response = create_custom_redirect_response(settings.frontend_url + "/login/?success=true")
+    response.set_cookie(key="access_token", value=tokens.access_token)
+    response.set_cookie(key="refresh_token", value=tokens.refresh_token)
+
+    return response
 
 
 @router.post("/tokens", response_model=TokenData)
