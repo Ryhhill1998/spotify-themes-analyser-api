@@ -4,6 +4,7 @@ import urllib.parse
 from fastapi import Response, APIRouter, Request
 from fastapi.responses import RedirectResponse
 from loguru import logger
+from starlette.responses import JSONResponse
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
@@ -112,3 +113,12 @@ async def callback(
         logger.exception(f"Failed to authorise the user - {e}")
         error_params = urllib.parse.urlencode({"error": "authentication-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
+
+
+@router.get("/cookies")
+def test_set_cookies(settings: SettingsDependency):
+    response = JSONResponse(content={"detail": "testing set cookies"})
+    set_response_cookie(response=response, key="cookie1", value="val1", domain=settings.domain)
+    set_response_cookie(response=response, key="cookie2", value="val2", domain=settings.domain)
+
+    return response

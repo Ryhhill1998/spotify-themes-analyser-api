@@ -8,7 +8,7 @@ from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundEx
 
 
 def set_response_cookie(response: Response, key: str, value: str, domain: str):
-    response.set_cookie(key=key, value=value, httponly=True, secure=True, samesite="none", path="/")
+    response.set_cookie(key=key, value=value, httponly=True, secure=True, samesite="none", path="/", domain=domain)
 
 
 def create_json_response_and_set_token_cookies(content: list[dict] | dict, tokens: TokenData, domain: str) -> JSONResponse:
