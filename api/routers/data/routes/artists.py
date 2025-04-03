@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, SettingsDependency
 from api.routers.utils import get_item_response
 from api.services.music.spotify_data_service import ItemType
 
@@ -12,7 +12,8 @@ router = APIRouter(prefix="/artists")
 async def get_artist_by_id(
         artist_id: str,
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency
+        spotify_data_service: SpotifyDataServiceDependency,
+        settings: SettingsDependency
 ) -> JSONResponse:
     """
     Retrieves details about a specific artist by their ID.
@@ -43,7 +44,8 @@ async def get_artist_by_id(
         item_id=artist_id,
         item_type=ItemType.ARTISTS,
         tokens=tokens,
-        spotify_data_service=spotify_data_service
+        spotify_data_service=spotify_data_service,
+        domain=settings.domain
     )
 
     return artist_response

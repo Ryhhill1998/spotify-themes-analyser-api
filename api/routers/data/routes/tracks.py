@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency, \
+    SettingsDependency
 from api.models import Emotion
 from api.routers.utils import get_item_response, create_json_response_and_set_token_cookies
 from api.services.insights_service import InsightsServiceException
@@ -15,7 +16,8 @@ router = APIRouter(prefix="/tracks")
 async def get_track_by_id(
         track_id: str,
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency
+        spotify_data_service: SpotifyDataServiceDependency,
+        settings: SettingsDependency
 ) -> JSONResponse:
     """
     Retrieves details about a specific track by its ID.
@@ -46,7 +48,8 @@ async def get_track_by_id(
         item_id=track_id,
         item_type=ItemType.TRACKS,
         tokens=tokens,
-        spotify_data_service=spotify_data_service
+        spotify_data_service=spotify_data_service,
+        domain=settings.domain
     )
 
     return track_response
@@ -57,7 +60,8 @@ async def get_lyrics_tagged_with_emotion(
         track_id: str,
         emotion: Emotion,
         tokens: TokenCookieExtractionDependency,
-        insights_service: InsightsServiceDependency
+        insights_service: InsightsServiceDependency,
+        settings: SettingsDependency
 ) -> JSONResponse:
     """
     Retrieves the user's top emotional responses based on their music listening history.
@@ -95,7 +99,8 @@ async def get_lyrics_tagged_with_emotion(
         response_content = tagged_lyrics_response.lyrics_data.model_dump()
         response = create_json_response_and_set_token_cookies(
             content=response_content,
-            tokens=tagged_lyrics_response.tokens
+            tokens=tagged_lyrics_response.tokens,
+            domain=settings.domain
         )
 
         return response

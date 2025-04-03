@@ -31,7 +31,7 @@ def create_custom_redirect_response(redirect_url: str) -> Response:
 
 
 @router.get("/login")
-async def login(spotify_auth_service: SpotifyAuthServiceDependency):
+async def login(spotify_auth_service: SpotifyAuthServiceDependency, settings: SettingsDependency):
     """
     Initiates the Spotify login process.
 
@@ -53,7 +53,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     url = spotify_auth_service.generate_auth_url(state)
 
     response = create_custom_redirect_response(url)
-    set_response_cookie(response=response, key="oauth_state", value=state)
+    set_response_cookie(response=response, key="oauth_state", value=state, domain=settings.domain)
 
     return response
 
@@ -104,8 +104,8 @@ async def callback(
         tokens = await spotify_auth_service.create_tokens(code)
 
         response = create_custom_redirect_response(settings.frontend_url)
-        set_response_cookie(response=response, key="access_token", value=tokens.access_token)
-        set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
+        set_response_cookie(response=response, key="access_token", value=tokens.access_token, domain=settings.domain)
+        set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token, domain=settings.domain)
 
         return response
     except (SpotifyAuthServiceException, ValueError) as e:

@@ -7,11 +7,11 @@ from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundEx
     SpotifyDataService, ItemType, TimeRange
 
 
-def set_response_cookie(response: Response, key: str, value: str):
-    response.set_cookie(key=key, value=value, httponly=True, secure=True, samesite="none")
+def set_response_cookie(response: Response, key: str, value: str, domain: str):
+    response.set_cookie(key=key, value=value, httponly=True, secure=True, samesite="none", path="/")
 
 
-def create_json_response_and_set_token_cookies(content: list[dict] | dict, tokens: TokenData) -> JSONResponse:
+def create_json_response_and_set_token_cookies(content: list[dict] | dict, tokens: TokenData, domain: str) -> JSONResponse:
     """
     Creates a JSON response and sets access and refresh tokens as cookies.
 
@@ -29,8 +29,8 @@ def create_json_response_and_set_token_cookies(content: list[dict] | dict, token
     """
 
     response = JSONResponse(content=content)
-    set_response_cookie(response=response, key="access_token", value=tokens.access_token)
-    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token)
+    set_response_cookie(response=response, key="access_token", value=tokens.access_token, domain=domain)
+    set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token, domain=domain)
 
     return response
 
@@ -39,7 +39,8 @@ async def get_item_response(
         item_id: str,
         item_type: ItemType,
         tokens: TokenData,
-        spotify_data_service: SpotifyDataService
+        spotify_data_service: SpotifyDataService,
+        domain: str
 ) -> JSONResponse:
     """
     Retrieves information about a specific Spotify item (track or artist).
@@ -73,7 +74,7 @@ async def get_item_response(
         tokens = item_response.tokens
 
         response_content = item_response.data.model_dump()
-        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens, domain=domain)
 
         return response
     except SpotifyDataServiceNotFoundException as e:
@@ -88,6 +89,7 @@ async def get_item_response(
 
 async def get_top_items_response(
         spotify_data_service: SpotifyDataService,
+        domain: str,
         tokens: TokenData,
         item_type: ItemType,
         time_range: TimeRange,
@@ -129,7 +131,7 @@ async def get_top_items_response(
         tokens = top_items_response.tokens
 
         response_content = [item.model_dump() for item in top_items_response.data]
-        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens, domain=domain)
 
         return response
     except SpotifyDataServiceException as e:

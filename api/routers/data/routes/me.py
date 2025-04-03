@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import Field
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency, \
+    SettingsDependency
 from api.routers.utils import create_json_response_and_set_token_cookies, get_top_items_response
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import ItemType, TimeRange
@@ -16,13 +17,14 @@ router = APIRouter(prefix="/me")
 @router.get("/profile")
 async def get_profile(
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency
+        spotify_data_service: SpotifyDataServiceDependency,
+        settings: SettingsDependency
 ) -> JSONResponse:
     profile_data = await spotify_data_service.get_profile_data(tokens)
     tokens = profile_data.tokens
 
     response_content = profile_data.profile.model_dump()
-    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+    response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens, domain=settings.domain)
 
     return response
 
@@ -31,6 +33,7 @@ async def get_profile(
 async def get_top_artists(
         tokens: TokenCookieExtractionDependency,
         spotify_data_service: SpotifyDataServiceDependency,
+        settings: SettingsDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
 ) -> JSONResponse:
@@ -60,6 +63,7 @@ async def get_top_artists(
 
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
+        domain=settings.domain,
         tokens=tokens,
         item_type=ItemType.ARTISTS,
         time_range=time_range,
@@ -73,6 +77,7 @@ async def get_top_artists(
 async def get_top_tracks(
         tokens: TokenCookieExtractionDependency,
         spotify_data_service: SpotifyDataServiceDependency,
+        settings: SettingsDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
 ) -> JSONResponse:
@@ -102,6 +107,7 @@ async def get_top_tracks(
 
     response = await get_top_items_response(
         spotify_data_service=spotify_data_service,
+        domain=settings.domain,
         tokens=tokens,
         item_type=ItemType.TRACKS,
         time_range=time_range,
@@ -115,6 +121,7 @@ async def get_top_tracks(
 async def get_top_emotions(
         tokens: TokenCookieExtractionDependency,
         insights_service: InsightsServiceDependency,
+        settings: SettingsDependency,
         time_range: TimeRange
 ) -> JSONResponse:
     """
@@ -145,7 +152,7 @@ async def get_top_emotions(
         tokens = top_emotions_response.tokens
 
         response_content = [emotion.model_dump() for emotion in top_emotions]
-        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens)
+        response = create_json_response_and_set_token_cookies(content=response_content, tokens=tokens, domain=settings.domain)
 
         return response
     except InsightsServiceException as e:
