@@ -1,5 +1,7 @@
 from enum import Enum
 import urllib.parse
+from functools import cached_property
+
 from loguru import logger
 
 import pydantic
@@ -9,7 +11,6 @@ from api.models import SpotifyItem, SpotifyTrack, SpotifyArtist, SpotifyTrackArt
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
     EndpointRequesterException, EndpointRequesterNotFoundException
 from api.services.music.music_service import MusicService
-from api.services.music.spotify_auth_service import SpotifyAuthService
 
 
 class SpotifyDataServiceException(Exception):
@@ -114,7 +115,8 @@ class SpotifyDataService(MusicService):
             client_id: str,
             client_secret: str,
             base_url: str,
-            endpoint_requester: EndpointRequester
+            endpoint_requester: EndpointRequester,
+            access_token: str
     ):
         """
         Parameters
@@ -135,33 +137,38 @@ class SpotifyDataService(MusicService):
             base_url=base_url,
             endpoint_requester=endpoint_requester
         )
+        self.access_token = access_token
 
-    async def get_profile_data(self, access_token: str) -> SpotifyProfile:
+    @cached_property
+    def _bearer_auth_headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.access_token}"}
+
+    async def get_profile_data(self) -> SpotifyProfile:
         """
-            Fetches a user's profile from Spotify.
+        Fetches a user's profile from Spotify.
 
-            Parameters
-            ----------
-            access_token : str
-                The user's Spotify access token.
+        Parameters
+        ----------
+        access_token : str
+            The user's Spotify access token.
 
-            Returns
-            -------
-            SpotifyProfile
-                The user's Spotify profile data.
+        Returns
+        -------
+        SpotifyProfile
+            The user's Spotify profile data.
 
-            Raises
-            -------
-            SpotifyDataServiceUnauthorisedException
-                If the Spotify API request returns a 401 Unauthorised response code.
-            SpotifyDataServiceException
-                If the Spotify API request fails for any other reason or API data validation fails.
-            """
+        Raises
+        -------
+        SpotifyDataServiceUnauthorisedException
+            If the Spotify API request returns a 401 Unauthorised response code.
+        SpotifyDataServiceException
+            If the Spotify API request fails for any other reason or API data validation fails.
+        """
 
         try:
             url = f"{self.base_url}/me"
 
-            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+            data = await self.endpoint_requester.get(url=url, headers=self._bearer_auth_headers)
 
             profile_data = SpotifyProfileData(**data)
 
@@ -307,20 +314,12 @@ class SpotifyDataService(MusicService):
             logger.error(error_message)
             raise SpotifyDataServiceException(error_message)
 
-    async def get_top_items(
-            self,
-            access_token: str,
-            item_type: ItemType,
-            time_range: str,
-            limit: int
-    ) -> list[SpotifyItem]:
+    async def get_top_items(self, item_type: ItemType, time_range: str, limit: int) -> list[SpotifyItem]:
         """
         Fetches a user's top items from Spotify.
 
         Parameters
         ----------
-        access_token : str
-            The user's Spotify access token.
         item_type : ItemType
             The type of items to retrieve (TRACKS or ARTISTS).
         time_range : str
@@ -345,7 +344,7 @@ class SpotifyDataService(MusicService):
             params = {"time_range": time_range, "limit": limit}
             url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
 
-            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+            data = await self.endpoint_requester.get(url=url, headers=self._bearer_auth_headers)
 
             top_items = [self._create_item(data=entry, item_type=item_type) for entry in data["items"]]
 
@@ -359,14 +358,12 @@ class SpotifyDataService(MusicService):
             logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceException(error_message)
 
-    async def get_item_by_id(self, access_token: str, item_id: str, item_type: ItemType) -> SpotifyItem:
+    async def get_item_by_id(self, item_id: str, item_type: ItemType) -> SpotifyItem:
         """
         Fetches a specific item (track or artist) from the Spotify API using its unique identifier.
 
         Parameters
         ----------
-        access_token : str
-            The user's Spotify access token.
         item_id : str
             The unique identifier of the item (track or artist) to retrieve.
         item_type : ItemType
@@ -390,7 +387,7 @@ class SpotifyDataService(MusicService):
         try:
             url = f"{self.base_url}/{item_type.value}/{item_id}"
 
-            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+            data = await self.endpoint_requester.get(url=url, headers=self._bearer_auth_headers)
 
             item = self._create_item(data=data, item_type=item_type)
 

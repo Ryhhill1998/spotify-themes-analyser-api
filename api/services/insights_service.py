@@ -3,7 +3,7 @@ from collections import defaultdict
 import pydantic
 from loguru import logger
 
-from api.models import TokenData, LyricsRequest, TopEmotion, EmotionalProfileResponse, EmotionalProfileRequest, \
+from api.models import LyricsRequest, TopEmotion, EmotionalProfileResponse, EmotionalProfileRequest, \
     EmotionalTagsRequest, Emotion, SpotifyTrack, EmotionalTagsResponse
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
@@ -190,7 +190,7 @@ class InsightsService:
         top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
         return top_emotions
 
-    async def get_top_emotions(self, tokens: TokenData, time_range: str, limit: int = 5) -> list[TopEmotion]:
+    async def get_top_emotions(self, time_range: str, limit: int = 5) -> list[TopEmotion]:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
 
@@ -199,8 +199,6 @@ class InsightsService:
 
         Parameters
         ----------
-        tokens : TokenData
-            The authentication tokens required to access the Spotify API.
         limit : int, optional
             The number of top emotions to return (default is 5).
 
@@ -222,7 +220,6 @@ class InsightsService:
         try:
             # get top tracks and refreshed tokens (if expired)
             top_items = await self.spotify_data_service.get_top_items(
-                access_token=tokens.access_token,
                 item_type=ItemType.TRACKS,
                 time_range=time_range,
                 limit=limit
@@ -268,12 +265,7 @@ class InsightsService:
             logger.error(error_message)
             raise InsightsServiceException(error_message)
 
-    async def tag_lyrics_with_emotion(
-            self,
-            track_id: str,
-            emotion: Emotion,
-            tokens: TokenData
-    ) -> EmotionalTagsResponse:
+    async def tag_lyrics_with_emotion(self, track_id: str, emotion: Emotion) -> EmotionalTagsResponse:
         """
         Retrieves emotional tags for a given track's lyrics based on the specified emotion.
 
@@ -283,13 +275,11 @@ class InsightsService:
             The ID of the track being analyzed.
         emotion : Emotion
             The emotion for which tagged lyrics are requested.
-        tokens : TokenData
-            The authentication tokens required for API access.
 
         Returns
         -------
         EmotionalTagsResponse
-            A response object containing the emotional tags and updated tokens.
+            A response object containing the emotional tags.
 
         Raises
         ------
@@ -298,11 +288,7 @@ class InsightsService:
         """
 
         try:
-            track_response = await self.spotify_data_service.get_item_by_id(
-                item_id=track_id,
-                access_token=tokens.access_token,
-                item_type=ItemType.TRACKS
-            )
+            track_response = await self.spotify_data_service.get_item_by_id(item_id=track_id, item_type=ItemType.TRACKS)
             track = SpotifyTrack(**track_response.data.model_dump())
 
             lyrics_request = LyricsRequest(track_id=track.id, artist_name=track.artist.name, track_title=track.name)

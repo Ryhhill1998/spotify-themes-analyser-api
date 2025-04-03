@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import Field
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.dependencies import AccessTokenDependency, SpotifyDataServiceDependency, InsightsServiceDependency
 from api.models import SpotifyArtist, SpotifyProfile
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import ItemType, TimeRange, SpotifyDataServiceException, \
@@ -16,16 +16,16 @@ router = APIRouter(prefix="/me")
 
 @router.get("/profile", response_model=SpotifyProfile)
 async def get_profile(
-        tokens: TokenCookieExtractionDependency,
+        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency
 ) -> SpotifyProfile:
-    profile_data = await spotify_data_service.get_profile_data(tokens)
+    profile_data = await spotify_data_service.get_profile_data(access_token)
     return profile_data
 
 
 @router.get("/top/artists", response_model=list[SpotifyArtist])
 async def get_top_artists(
-        tokens: TokenCookieExtractionDependency,
+        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
@@ -56,7 +56,7 @@ async def get_top_artists(
 
     try:
         top_artists = await spotify_data_service.get_top_items(
-            access_token=tokens.access_token,
+            access_token=access_token,
             item_type=ItemType.ARTISTS,
             time_range=time_range,
             limit=limit
@@ -74,7 +74,7 @@ async def get_top_artists(
 
 @router.get("/top/tracks")
 async def get_top_tracks(
-        tokens: TokenCookieExtractionDependency,
+        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
@@ -105,7 +105,7 @@ async def get_top_tracks(
 
     try:
         top_tracks = await spotify_data_service.get_top_items(
-            access_token=tokens.access_token,
+            access_token=access_token,
             item_type=ItemType.TRACKS,
             time_range=time_range,
             limit=limit
@@ -123,7 +123,7 @@ async def get_top_tracks(
 
 @router.get("/top/emotions")
 async def get_top_emotions(
-        tokens: TokenCookieExtractionDependency,
+        access_token: AccessTokenDependency,
         insights_service: InsightsServiceDependency,
         time_range: TimeRange
 ) -> JSONResponse:
