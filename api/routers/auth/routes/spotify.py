@@ -98,7 +98,7 @@ async def callback(
     # make sure that state stored in login route is same as that received after authenticating
     # prevents csrf
     if request.cookies["oauth_state"] != state:
-        logger.exception(f"invalid state param")
+        logger.error(f"invalid state param")
         error_params = urllib.parse.urlencode({"error": "auth-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
@@ -111,7 +111,7 @@ async def get_tokens(code: Annotated[str, Body()], spotify_auth_service: Spotify
         tokens = await spotify_auth_service.create_tokens(code)
         return tokens
     except SpotifyAuthServiceException as e:
-        logger.exception(f"Failed to create tokens from code: {code} - {e}")
+        logger.error(f"Failed to create tokens from code: {code} - {e}")
         raise HTTPException(status_code=401, detail="Invalid authorisation code.")
 
 
@@ -121,5 +121,5 @@ async def get_tokens(refresh_token: Annotated[str, Body()], spotify_auth_service
         tokens = await spotify_auth_service.refresh_tokens(refresh_token)
         return tokens
     except SpotifyAuthServiceException as e:
-        logger.exception(f"Failed to refresh tokens from refresh_token: {refresh_token} - {e}")
+        logger.error(f"Failed to refresh tokens from refresh_token: {refresh_token} - {e}")
         raise HTTPException(status_code=401, detail="Invalid refresh token.")

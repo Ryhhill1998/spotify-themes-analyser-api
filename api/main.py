@@ -51,7 +51,7 @@ app.include_router(data.router)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, e: Exception):
     """Handles all unhandled exceptions globally."""
-    logger.exception(f"Unhandled Exception occurred at {request.url} - {e}")
+    logger.error(f"Unhandled Exception occurred at {request.url} - {e}")
 
     return JSONResponse(
         status_code=500,

@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Annotated
 from pydantic import BaseModel, Field
 
+
 class TokenData(BaseModel):
     """
     Represents the Spotify authentication tokens for a user.
@@ -55,11 +56,6 @@ class SpotifyProfileData(SpotifyProfileBase):
 
 class SpotifyProfile(SpotifyProfileBase):
     followers: int
-
-
-class SpotifyProfileResponse(BaseModel):
-    profile: SpotifyProfile
-    tokens: TokenData
 
 
 class SpotifyItemBase(BaseModel):
@@ -253,38 +249,6 @@ class SpotifyTrack(SpotifyItem):
     popularity: int
 
 
-class SpotifyItemResponse(BaseModel):
-    """
-    Represents a response containing a single Spotify item and updated authentication tokens.
-
-    Attributes
-    ----------
-    data : SpotifyItem
-        The item data.
-    tokens : TokenData
-        The updated authentication tokens.
-    """
-
-    data: SpotifyItem
-    tokens: TokenData
-
-
-class SpotifyItemsResponse(BaseModel):
-    """
-    Represents a response containing a list of Spotify items and updated authentication tokens.
-
-    Attributes
-    ----------
-    data : list[SpotifyItem]
-        A list of Spotify items.
-    tokens : TokenData
-        The updated authentication tokens.
-    """
-
-    data: list[SpotifyItem]
-    tokens: TokenData
-
-
 class LyricsRequest(BaseModel):
     """
     Represents a request to retrieve lyrics for a track.
@@ -447,22 +411,6 @@ class TopEmotion(BaseModel):
     name: str
     percentage: EmotionPercentage
     track_id: str
-
-
-class TopEmotionsResponse(BaseModel):
-    """
-    Represents a response containing the top emotions detected across tracks and updated spotify auth tokens.
-
-    Attributes
-    ----------
-    top_emotions : list[TopEmotion]
-        A list of the most prominent emotions detected in different tracks.
-    tokens : TokenData
-        The updated authentication tokens.
-    """
-
-    top_emotions: list[TopEmotion]
-    tokens: TokenData
 
 
 class Emotion(str, Enum):

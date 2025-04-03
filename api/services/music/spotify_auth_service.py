@@ -163,11 +163,11 @@ class SpotifyAuthService(MusicService):
             return TokenData(access_token=access_token, refresh_token=refresh_token)
         except EndpointRequesterException as e:
             error_message = f"Spotify API token request failed - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise SpotifyAuthServiceException(error_message)
         except pydantic.ValidationError as e:
             error_message = f"Failed to validate tokens - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise SpotifyAuthServiceException(error_message)
 
     async def create_tokens(self, auth_code: str) -> TokenData:

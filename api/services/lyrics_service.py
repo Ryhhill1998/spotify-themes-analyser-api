@@ -110,18 +110,18 @@ class LyricsService:
             return lyrics_response
         except pydantic.ValidationError as e:
             error_message = f"Failed to convert API response to LyricsResponse object - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise LyricsServiceException(error_message)
         except EndpointRequesterNotFoundException as e:
             error_message = (
                 f"Requested lyrics not found for track_id: {lyrics_request.track_id}, "
                 f"artist_name: {lyrics_request.artist_name}, track_title: {lyrics_request.track_title} - {e}"
             )
-            logger.exception(error_message)
+            logger.error(error_message)
             raise LyricsServiceNotFoundException(error_message)
         except EndpointRequesterException as e:
             error_message = f"Request to Lyrics API failed - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise LyricsServiceException(error_message)
 
     def _create_lyrics_tasks(self, requests: list[LyricsRequest]):

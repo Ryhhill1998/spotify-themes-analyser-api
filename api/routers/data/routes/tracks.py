@@ -106,5 +106,5 @@ async def get_lyrics_tagged_with_emotion(
         return response
     except InsightsServiceException as e:
         error_message = "Failed to tag lyrics with requested emotion"
-        logger.exception(f"{error_message} - {e}")
+        logger.error(f"{error_message} - {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)

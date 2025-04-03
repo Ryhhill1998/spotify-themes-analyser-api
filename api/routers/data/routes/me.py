@@ -157,5 +157,5 @@ async def get_top_emotions(
         return response
     except InsightsServiceException as e:
         error_message = "Failed to retrieve the user's top emotions"
-        logger.exception(f"{error_message} - {e}")
+        logger.error(f"{error_message} - {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)

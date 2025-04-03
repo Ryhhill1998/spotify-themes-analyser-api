@@ -4,12 +4,12 @@ from loguru import logger
 
 import pydantic
 
-from api.models import SpotifyItemsResponse, SpotifyItem, SpotifyTrack, SpotifyArtist, TokenData, SpotifyTrackArtist, \
-    SpotifyItemResponse, SpotifyTrackData, SpotifyArtistData, SpotifyProfile, SpotifyProfileResponse, SpotifyProfileData
+from api.models import SpotifyItem, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, SpotifyTrackData, \
+    SpotifyArtistData, SpotifyProfile, SpotifyProfileData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
-    EndpointRequesterNotFoundException, EndpointRequesterException
+    EndpointRequesterException, EndpointRequesterNotFoundException
 from api.services.music.music_service import MusicService
-from api.services.music.spotify_auth_service import SpotifyAuthService, SpotifyAuthServiceException
+from api.services.music.spotify_auth_service import SpotifyAuthService
 
 
 class SpotifyDataServiceException(Exception):
@@ -20,6 +20,20 @@ class SpotifyDataServiceException(Exception):
     ----------
     message : str
         The error message describing the failure.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+        
+
+class SpotifyDataServiceUnauthorisedException(SpotifyDataServiceException):
+    """
+    Exception raised when SpotifyDataService fails to authenticate the request with the provided access_token.
+
+    Parameters
+    ----------
+    message : str
+        The error message describing the resource that was not found.
     """
 
     def __init__(self, message):
@@ -86,11 +100,6 @@ class SpotifyDataService(MusicService):
     -------------
     MusicService, which provides core attributes such as client_id, client_secret, base_url and endpoint_requester.
 
-    Attributes
-    ----------
-    spotify_auth_service : SpotifyAuthService
-        The authentication service used for handling token management.
-
     Methods
     -------
     get_top_items(tokens, item_type, time_range=TimeRange.MEDIUM, limit=20) -> SpotifyItemsResponse
@@ -105,8 +114,7 @@ class SpotifyDataService(MusicService):
             client_id: str,
             client_secret: str,
             base_url: str,
-            endpoint_requester: EndpointRequester,
-            spotify_auth_service: SpotifyAuthService
+            endpoint_requester: EndpointRequester
     ):
         """
         Parameters
@@ -119,8 +127,6 @@ class SpotifyDataService(MusicService):
             The base URL of the Spotify Web API.
         endpoint_requester : EndpointRequester
             The service responsible for making API requests.
-        spotify_auth_service : SpotifyAuthService
-            The authentication service used for handling token management.
         """
 
         super().__init__(
@@ -129,34 +135,56 @@ class SpotifyDataService(MusicService):
             base_url=base_url,
             endpoint_requester=endpoint_requester
         )
-        self.spotify_auth_service = spotify_auth_service
 
-    async def _get_profile_data(self, access_token: str) -> SpotifyProfile:
-        url = f"{self.base_url}/me"
+    async def get_profile_data(self, access_token: str) -> SpotifyProfile:
+        """
+            Fetches a user's profile from Spotify.
 
-        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+            Parameters
+            ----------
+            access_token : str
+                The user's Spotify access token.
 
-        profile_data = SpotifyProfileData(**data)
-        return SpotifyProfile(
-            id=profile_data.id,
-            display_name=profile_data.display_name,
-            email=profile_data.email,
-            href=profile_data.href,
-            images=profile_data.images,
-            followers=profile_data.followers.total
-        )
+            Returns
+            -------
+            SpotifyProfile
+                The user's Spotify profile data.
 
-    async def get_profile_data(self, tokens: TokenData) -> SpotifyProfileResponse:
+            Raises
+            -------
+            SpotifyDataServiceUnauthorisedException
+                If the Spotify API request returns a 401 Unauthorised response code.
+            SpotifyDataServiceException
+                If the Spotify API request fails for any other reason or API data validation fails.
+            """
+
         try:
-            profile_data = await self._get_profile_data(tokens.access_token)
+            url = f"{self.base_url}/me"
+
+            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
+
+            profile_data = SpotifyProfileData(**data)
+
+            return SpotifyProfile(
+                id=profile_data.id,
+                display_name=profile_data.display_name,
+                email=profile_data.email,
+                href=profile_data.href,
+                images=profile_data.images,
+                followers=profile_data.followers.total
+            )
         except EndpointRequesterUnauthorisedException as e:
-            print(e)
-            tokens = await self.spotify_auth_service.refresh_tokens(tokens.refresh_token)
-            profile_data = await self._get_profile_data(tokens.access_token)
-
-        profile_response = SpotifyProfileResponse(profile=profile_data, tokens=tokens)
-
-        return profile_response
+            error_message = "Invalid Spotify API access token"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceUnauthorisedException(error_message)
+        except EndpointRequesterException as e:
+            error_message = "Failed to make request to Spotify API"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceException(error_message)
+        except pydantic.ValidationError as e:
+            error_message = "Spotify API data validation failed"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceException(error_message)
 
     @staticmethod
     def _create_track(data: dict) -> SpotifyTrack:
@@ -272,14 +300,14 @@ class SpotifyDataService(MusicService):
                 raise SpotifyDataServiceException(error_message)
         except TypeError as e:
             error_message = f"Spotify data not of type dict. Actual type: {type(data)} - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise SpotifyDataServiceException(error_message)
         except pydantic.ValidationError as e:
             error_message = f"Failed to create TopItem from Spotify API data: {data}, type: {item_type} - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise SpotifyDataServiceException(error_message)
 
-    async def _get_top_items(
+    async def get_top_items(
             self,
             access_token: str,
             item_type: ItemType,
@@ -307,87 +335,31 @@ class SpotifyDataService(MusicService):
 
         Raises
         -------
-        SpotifyDataServiceException
-            If creating the top item objects fails.
-        EndpointRequesterUnauthorisedException
+        SpotifyDataServiceUnauthorisedException
             If the Spotify API request returns a 401 Unauthorised response code.
-        EndpointRequesterException
-            If the Spotify API request fails for any other reason.
-        """
-
-        params = {"time_range": time_range, "limit": limit}
-        url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
-
-        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
-
-        top_items = [self._create_item(data=entry, item_type=item_type) for entry in data["items"]]
-
-        return top_items
-
-    async def get_top_items(
-            self,
-            tokens: TokenData,
-            item_type: ItemType,
-            time_range: TimeRange = TimeRange.MEDIUM,
-            limit: int = 50
-    ) -> SpotifyItemsResponse:
-        """
-        Retrieves the top items (tracks or artists) for a user.
-
-        If the request fails due to an expired or invalid token, it attempts to refresh the token and retry.
-
-        Parameters
-        ----------
-        tokens : TokenData
-            The user's access and refresh tokens.
-        item_type : ItemType
-            The type of items to retrieve (TRACKS or ARTISTS).
-        time_range : TimeRange, optional
-            The time range for retrieving top items, default is MEDIUM.
-        limit : int, optional
-            The number of top items to retrieve, default is 20.
-
-        Returns
-        -------
-        SpotifyItemsResponse
-            A response containing the user's top items and most up-to-date access and refresh tokens.
-
-        Raises
-        ------
         SpotifyDataServiceException
-            If the Spotify API data or token refresh requests fail or response data validation fails.
+                If the Spotify API request fails for any other reason or API data validation fails.
         """
 
         try:
-            try:
-                top_items = await self._get_top_items(
-                    access_token=tokens.access_token,
-                    item_type=item_type,
-                    time_range=time_range.value,
-                    limit=limit
-                )
-            except EndpointRequesterUnauthorisedException:
-                tokens = await self.spotify_auth_service.refresh_tokens(tokens.refresh_token)
-                top_items = await self._get_top_items(
-                    access_token=tokens.access_token,
-                    item_type=item_type,
-                    time_range=time_range.value,
-                    limit=limit
-                )
+            params = {"time_range": time_range, "limit": limit}
+            url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
 
-            top_items_response = SpotifyItemsResponse(data=top_items, tokens=tokens)
+            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
 
-            return top_items_response
+            top_items = [self._create_item(data=entry, item_type=item_type) for entry in data["items"]]
+
+            return top_items
+        except EndpointRequesterUnauthorisedException as e:
+            error_message = "Invalid Spotify API access token"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceUnauthorisedException(error_message)
         except EndpointRequesterException as e:
-            error_message = f"Request to Spotify API failed - {e}"
-            logger.exception(error_message)
-            raise SpotifyDataServiceException(error_message)
-        except SpotifyAuthServiceException as e:
-            error_message = f"Failed to refresh access token - {e}"
-            logger.exception(error_message)
+            error_message = "Failed to make request to Spotify API"
+            logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceException(error_message)
 
-    async def _get_item_by_id(self, access_token: str, item_id: str, item_type: ItemType) -> SpotifyItem:
+    async def get_item_by_id(self, access_token: str, item_id: str, item_type: ItemType) -> SpotifyItem:
         """
         Fetches a specific item (track or artist) from the Spotify API using its unique identifier.
 
@@ -408,78 +380,30 @@ class SpotifyDataService(MusicService):
         Raises
         ------
         SpotifyDataServiceException
-            If creating the top item object fails.
-        EndpointRequesterUnauthorisedException
+            If creating the top item object or the API request fails.
+        SpotifyDataServiceUnauthorisedException
             If the Spotify API request returns a 401 Unauthorised response code.
-        EndpointRequesterNotFoundException
-            If the Spotify API request returns a 404 Not Found response code.
-        EndpointRequesterException
-            If the Spotify API request fails for any other reason.
-        """
-
-        url = f"{self.base_url}/{item_type.value}/{item_id}"
-
-        data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
-
-        item = self._create_item(data=data, item_type=item_type)
-
-        return item
-
-    async def get_item_by_id(self, item_id: str, tokens: TokenData, item_type: ItemType) -> SpotifyItemResponse:
-        """
-        Retrieves a specific track or artist by its unique identifier, handling authentication and errors.
-
-        If the request fails due to an expired or invalid token, it attempts to refresh the token and retry.
-
-        Parameters
-        ----------
-        item_id : str
-            The unique identifier of the item (track or artist) to retrieve.
-        tokens : TokenData
-            The user's authentication tokens required for making the API request.
-        item_type : ItemType
-            The type of the item being requested (e.g., TRACKS or ARTISTS).
-
-        Returns
-        -------
-        SpotifyItemResponse
-            A response object containing the retrieved item along with updated authentication tokens.
-
-        Raises
-        ------
         SpotifyDataServiceNotFoundException
-            If the requested item does not exist.
-        SpotifyDataServiceException
-            If the Spotify API data or token refresh requests fail or response data validation fails.
+            If the Spotify API request returns a 404 Not Found response code.
         """
 
         try:
-            try:
-                item = await self._get_item_by_id(
-                    item_id=item_id,
-                    access_token=tokens.access_token,
-                    item_type=item_type
-                )
-            except EndpointRequesterUnauthorisedException:
-                tokens = await self.spotify_auth_service.refresh_tokens(tokens.refresh_token)
-                item = await self._get_item_by_id(
-                    item_id=item_id,
-                    access_token=tokens.access_token,
-                    item_type=item_type
-                )
+            url = f"{self.base_url}/{item_type.value}/{item_id}"
 
-            item_response = SpotifyItemResponse(data=item, tokens=tokens)
+            data = await self.endpoint_requester.get(url=url, headers={"Authorization": f"Bearer {access_token}"})
 
-            return item_response
+            item = self._create_item(data=data, item_type=item_type)
+
+            return item
+        except EndpointRequesterUnauthorisedException as e:
+            error_message = "Invalid Spotify API access token"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceUnauthorisedException(error_message)
         except EndpointRequesterNotFoundException as e:
-            error_message = f"Requested item not found. ID: {item_id}, type: {item_type} - {e}"
-            logger.exception(error_message)
+            error_message = f"Requested Spotify item not found. Item ID: {item_id}, item type: {item_type}"
+            logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceNotFoundException(error_message)
         except EndpointRequesterException as e:
-            error_message = f"Request to Spotify API failed - {e}"
-            logger.exception(error_message)
-            raise SpotifyDataServiceException(error_message)
-        except SpotifyAuthServiceException as e:
-            error_message = f"Failed to refresh access token - {e}"
-            logger.exception(error_message)
+            error_message = "Failed to make request to Spotify API"
+            logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceException(error_message)

@@ -334,11 +334,11 @@ class InsightsService:
             return TopEmotionsResponse(top_emotions=top_emotions, tokens=tokens)
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
             error_message = f"Service failure - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise InsightsServiceException(error_message)
         except (pydantic.ValidationError, AttributeError) as e:
             error_message = f"Data validation failure - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise InsightsServiceException(error_message)
 
     async def _fetch_track_details(self, track_id: str, tokens: TokenData) -> tuple[SpotifyTrack, TokenData]:
@@ -461,9 +461,9 @@ class InsightsService:
             return TaggedLyricsResponse(lyrics_data=emotional_tags_response, tokens=tokens)
         except (SpotifyDataServiceException, LyricsServiceException, AnalysisServiceException) as e:
             error_message = f"Service failure - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise InsightsServiceException(error_message)
         except (pydantic.ValidationError, AttributeError) as e:
             error_message = f"Data validation failure - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise InsightsServiceException(error_message)

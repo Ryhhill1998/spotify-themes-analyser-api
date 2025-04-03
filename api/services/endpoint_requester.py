@@ -129,15 +129,15 @@ class EndpointRequester:
 
         if status_code == 401:
             error_message = f"Unauthorised request - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterUnauthorisedException(error_message)
         elif status_code == 404:
             error_message = f"Resource not found - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterNotFoundException(error_message)
         else:
             error_message = f"Request failed - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterException(error_message)
 
     async def _request(
@@ -202,21 +202,21 @@ class EndpointRequester:
             return res.json()
         except httpx.InvalidURL as e:
             error_message = f"Invalid URL - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterException(error_message)
         except httpx.TimeoutException as e:
             error_message = f"Request timeout - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterException(error_message)
         except httpx.RequestError as e:
             error_message = f"Request failed - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterException(error_message)
         except httpx.HTTPStatusError as e:
             self._handle_http_status_error(e)
         except json.decoder.JSONDecodeError as e:
             error_message = f"Invalid JSON response - {e}"
-            logger.exception(error_message)
+            logger.error(error_message)
             raise EndpointRequesterException(error_message)
 
     async def get(
