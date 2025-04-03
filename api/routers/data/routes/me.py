@@ -25,7 +25,6 @@ async def get_profile(
 
 @router.get("/top/artists", response_model=list[SpotifyArtist])
 async def get_top_artists(
-        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
@@ -35,8 +34,6 @@ async def get_top_artists(
 
     Parameters
     ----------
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the user's top artists from the Spotify API.
     limit : int
@@ -56,7 +53,6 @@ async def get_top_artists(
 
     try:
         top_artists = await spotify_data_service.get_top_items(
-            access_token=access_token,
             item_type=ItemType.ARTISTS,
             time_range=time_range,
             limit=limit
@@ -74,7 +70,6 @@ async def get_top_artists(
 
 @router.get("/top/tracks")
 async def get_top_tracks(
-        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
@@ -84,8 +79,6 @@ async def get_top_tracks(
 
     Parameters
     ----------
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the user's top tracks from the Spotify API.
     limit : int
@@ -105,7 +98,6 @@ async def get_top_tracks(
 
     try:
         top_tracks = await spotify_data_service.get_top_items(
-            access_token=access_token,
             item_type=ItemType.TRACKS,
             time_range=time_range,
             limit=limit
@@ -123,7 +115,6 @@ async def get_top_tracks(
 
 @router.get("/top/emotions")
 async def get_top_emotions(
-        access_token: AccessTokenDependency,
         insights_service: InsightsServiceDependency,
         time_range: TimeRange
 ) -> JSONResponse:
@@ -132,8 +123,6 @@ async def get_top_emotions(
 
     Parameters
     ----------
-    tokens : TokenCookieExtractionDependency
-        Dependency that extracts tokens from cookies.
     insights_service : InsightsServiceDependency
         Dependency for analyzing and retrieving the top emotions in the user's Spotify listening history.
 
@@ -150,7 +139,7 @@ async def get_top_emotions(
     """
 
     try:
-        top_emotions = await insights_service.get_top_emotions(tokens=tokens, time_range=time_range)
+        top_emotions = await insights_service.get_top_emotions(time_range=time_range)
         return top_emotions
     except InsightsServiceException as e:
         error_message = "Failed to retrieve the user's top emotions"
