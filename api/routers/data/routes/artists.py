@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from loguru import logger
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, SettingsDependency
-from api.routers.utils import get_item_response
-from api.services.music.spotify_data_service import ItemType
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency
+from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException, \
+    ItemType
 
 router = APIRouter(prefix="/artists")
 
@@ -12,8 +13,7 @@ router = APIRouter(prefix="/artists")
 async def get_artist_by_id(
         artist_id: str,
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency,
-        settings: SettingsDependency
+        spotify_data_service: SpotifyDataServiceDependency
 ) -> JSONResponse:
     """
     Retrieves details about a specific artist by their ID.
@@ -40,12 +40,18 @@ async def get_artist_by_id(
         artist from Spotify.
     """
 
-    artist_response = await get_item_response(
-        item_id=artist_id,
-        item_type=ItemType.ARTISTS,
-        tokens=tokens,
-        spotify_data_service=spotify_data_service,
-        domain=settings.domain
-    )
-
-    return artist_response
+    try:
+        artist = await spotify_data_service.get_item_by_id(
+            access_token=tokens.access_token,
+            item_id=artist_id,
+            item_type=ItemType.ARTISTS
+        )
+        return artist
+    except SpotifyDataServiceNotFoundException as e:
+        error_message = "Could not find the requested artist"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_message)
+    except SpotifyDataServiceException as e:
+        error_message = "Failed to retrieve the requested artist"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)

@@ -2,12 +2,11 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency, \
-    SettingsDependency
-from api.models import Emotion
-from api.routers.utils import get_item_response, create_json_response_and_set_token_cookies
+from api.dependencies import TokenCookieExtractionDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.models import Emotion, EmotionalTagsResponse, SpotifyTrack
 from api.services.insights_service import InsightsServiceException
-from api.services.music.spotify_data_service import ItemType
+from api.services.music.spotify_data_service import ItemType, SpotifyDataServiceNotFoundException, \
+    SpotifyDataServiceException
 
 router = APIRouter(prefix="/tracks")
 
@@ -16,9 +15,8 @@ router = APIRouter(prefix="/tracks")
 async def get_track_by_id(
         track_id: str,
         tokens: TokenCookieExtractionDependency,
-        spotify_data_service: SpotifyDataServiceDependency,
-        settings: SettingsDependency
-) -> JSONResponse:
+        spotify_data_service: SpotifyDataServiceDependency
+) -> SpotifyTrack:
     """
     Retrieves details about a specific track by its ID.
 
@@ -44,25 +42,30 @@ async def get_track_by_id(
         track from Spotify.
     """
 
-    track_response = await get_item_response(
-        item_id=track_id,
-        item_type=ItemType.TRACKS,
-        tokens=tokens,
-        spotify_data_service=spotify_data_service,
-        domain=settings.domain
-    )
+    try:
+        track = await spotify_data_service.get_item_by_id(
+            access_token=tokens.access_token,
+            item_id=track_id,
+            item_type=ItemType.TRACKS
+        )
+        return track
+    except SpotifyDataServiceNotFoundException as e:
+        error_message = "Could not find the requested track"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_message)
+    except SpotifyDataServiceException as e:
+        error_message = "Failed to retrieve the requested track"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_message)
 
-    return track_response
 
-
-@router.get("/{track_id}/lyrics/emotional-tags/{emotion}")
+@router.get("/{track_id}/lyrics/emotional-tags/{emotion}", response_model=EmotionalTagsResponse)
 async def get_lyrics_tagged_with_emotion(
         track_id: str,
         emotion: Emotion,
         tokens: TokenCookieExtractionDependency,
-        insights_service: InsightsServiceDependency,
-        settings: SettingsDependency
-) -> JSONResponse:
+        insights_service: InsightsServiceDependency
+) -> EmotionalTagsResponse:
     """
     Retrieves the user's top emotional responses based on their music listening history.
 
@@ -96,14 +99,7 @@ async def get_lyrics_tagged_with_emotion(
             tokens=tokens
         )
 
-        response_content = tagged_lyrics_response.lyrics_data.model_dump()
-        response = create_json_response_and_set_token_cookies(
-            content=response_content,
-            tokens=tagged_lyrics_response.tokens,
-            domain=settings.domain
-        )
-
-        return response
+        return tagged_lyrics_response
     except InsightsServiceException as e:
         error_message = "Failed to tag lyrics with requested emotion"
         logger.error(f"{error_message} - {e}")
