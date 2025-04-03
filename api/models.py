@@ -549,19 +549,3 @@ class EmotionalTagsResponse(EmotionalTagsRequest):
     """
 
     pass
-
-
-class TaggedLyricsResponse(BaseModel):
-    """
-    Represents a response containing lyrics with emotional tags and updated spotify authentication tokens.
-
-    Attributes
-    ----------
-    lyrics_data : EmotionalTagsResponse
-        The analyzed emotional tags associated with the lyrics.
-    tokens : TokenData
-        The updated authentication tokens.
-    """
-
-    lyrics_data: EmotionalTagsResponse
-    tokens: TokenData

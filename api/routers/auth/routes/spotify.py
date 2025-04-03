@@ -1,12 +1,13 @@
 import secrets
 import urllib.parse
+from typing import Annotated
 
-from fastapi import Response, APIRouter, Request
+from fastapi import Response, APIRouter, Request, Body, HTTPException
 from fastapi.responses import RedirectResponse
 from loguru import logger
-from starlette.responses import JSONResponse
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
+from api.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 from api.routers.utils import set_response_cookie
 
@@ -64,7 +65,6 @@ async def callback(
         code: str,
         state: str,
         request: Request,
-        spotify_auth_service: SpotifyAuthServiceDependency,
         settings: SettingsDependency
 ):
     """
@@ -95,30 +95,31 @@ async def callback(
         A redirect response to the frontend application with access and refresh tokens stored in cookies.
     """
 
-    try:
-        # make sure that state stored in login route is same as that received after authenticating
-        # prevents csrf
-        if request.cookies["oauth_state"] != state:
-            raise ValueError("Could not authenticate request.")
-
-        # get access and refresh tokens from music API to allow future API calls on behalf of the user
-        tokens = await spotify_auth_service.create_tokens(code)
-
-        response = create_custom_redirect_response(settings.frontend_url)
-        set_response_cookie(response=response, key="access_token", value=tokens.access_token, domain=settings.domain)
-        set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token, domain=settings.domain)
-
-        return response
-    except (SpotifyAuthServiceException, ValueError) as e:
-        logger.exception(f"Failed to authorise the user - {e}")
-        error_params = urllib.parse.urlencode({"error": "authentication-failure"})
+    # make sure that state stored in login route is same as that received after authenticating
+    # prevents csrf
+    if request.cookies["oauth_state"] != state:
+        logger.exception(f"invalid state param")
+        error_params = urllib.parse.urlencode({"error": "auth-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
+    return RedirectResponse(f"{settings.frontend_url}/auth-success/?code={code}")
 
-@router.get("/cookies")
-def test_set_cookies(settings: SettingsDependency):
-    response = create_custom_redirect_response(settings.frontend_url)
-    set_response_cookie(response=response, key="cookie1", value="val1", domain=settings.domain)
-    set_response_cookie(response=response, key="cookie2", value="val2", domain=settings.domain)
 
-    return response
+@router.post("/tokens", response_model=TokenData)
+async def get_tokens(code: Annotated[str, Body()], spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
+    try:
+        tokens = await spotify_auth_service.create_tokens(code)
+        return tokens
+    except SpotifyAuthServiceException as e:
+        logger.exception(f"Failed to create tokens from code: {code} - {e}")
+        raise HTTPException(status_code=401, detail="Invalid authorisation code.")
+
+
+@router.post("/refresh-tokens", response_model=TokenData)
+async def get_tokens(refresh_token: Annotated[str, Body()], spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
+    try:
+        tokens = await spotify_auth_service.refresh_tokens(refresh_token)
+        return tokens
+    except SpotifyAuthServiceException as e:
+        logger.exception(f"Failed to refresh tokens from refresh_token: {refresh_token} - {e}")
+        raise HTTPException(status_code=401, detail="Invalid refresh token.")
