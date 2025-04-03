@@ -1,12 +1,11 @@
 import secrets
 import urllib.parse
 
-from fastapi import Response, APIRouter, Request, HTTPException
+from fastapi import Response, APIRouter, Request
 from fastapi.responses import RedirectResponse
 from loguru import logger
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
-from api.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 from api.routers.utils import set_response_cookie
 
@@ -96,25 +95,20 @@ async def callback(
     """
 
     try:
+        # make sure that state stored in login route is same as that received after authenticating
+        # prevents csrf
         if request.cookies["oauth_state"] != state:
             raise ValueError("Could not authenticate request.")
 
-        # Redirect to frontend with a query parameter indicating success
-        frontend_url = f"{settings.frontend_url}/spotify-auth-success?code={code}"
-        return RedirectResponse(frontend_url)
+        # get access and refresh tokens from music API to allow future API calls on behalf of the user
+        tokens = await spotify_auth_service.create_tokens(code)
 
+        response = create_custom_redirect_response(settings.frontend_url)
+        set_response_cookie(response=response, key="access_token", value=tokens.access_token, domain=settings.domain)
+        set_response_cookie(response=response, key="refresh_token", value=tokens.refresh_token, domain=settings.domain)
+
+        return response
     except (SpotifyAuthServiceException, ValueError) as e:
         logger.exception(f"Failed to authorise the user - {e}")
         error_params = urllib.parse.urlencode({"error": "authentication-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
-
-
-@router.get("/tokens")
-async def get_tokens(code: str, spotify_auth_service: SpotifyAuthServiceDependency):
-    try:
-        tokens: TokenData = await spotify_auth_service.create_tokens(code)
-        return {"access_token": tokens.access_token, "refresh_token": tokens.refresh_token}
-    except SpotifyAuthServiceException as e:
-        logger.exception(f"Failed to retrieve tokens - {e}")
-        raise HTTPException(status_code=500, detail="Failed to get tokens")
-
