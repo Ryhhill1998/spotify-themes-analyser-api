@@ -70,13 +70,15 @@ SpotifyAuthServiceDependency = Annotated[SpotifyAuthService, Depends(get_spotify
 
 def get_spotify_data_service(
         settings: SettingsDependency,
-        endpoint_requester: EndpointRequesterDependency
+        endpoint_requester: EndpointRequesterDependency,
+        access_token: AccessTokenDependency
 ) -> SpotifyDataService:
     return SpotifyDataService(
         client_id=settings.spotify_client_id,
         client_secret=settings.spotify_client_secret,
         base_url=settings.spotify_data_base_url,
-        endpoint_requester=endpoint_requester
+        endpoint_requester=endpoint_requester,
+        access_token=access_token
     )
 
 
