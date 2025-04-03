@@ -117,8 +117,5 @@ async def callback(
 
 @router.get("/cookies")
 def test_set_cookies(settings: SettingsDependency):
-    response = RedirectResponse(settings.frontend_url)
-    set_response_cookie(response=response, key="cookie1", value="val1", domain=settings.domain)
-    set_response_cookie(response=response, key="cookie2", value="val2", domain=settings.domain)
-
+    response = JSONResponse(content={"name": "cookie", "value": "value"})
     return response
