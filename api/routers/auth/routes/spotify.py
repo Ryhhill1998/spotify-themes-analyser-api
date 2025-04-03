@@ -106,8 +106,8 @@ async def callback(
     tokens = await spotify_auth_service.create_tokens(code)
 
     response = create_custom_redirect_response(settings.frontend_url + "/login/?success=true")
-    response.set_cookie(key="access_token", value=tokens.access_token)
-    response.set_cookie(key="refresh_token", value=tokens.refresh_token)
+    response.set_cookie(key="access_token", value=tokens.access_token, secure=True, samesite="none", path="/")
+    response.set_cookie(key="refresh_token", value=tokens.refresh_token, secure=True, samesite="none", path="/")
 
     return response
 
