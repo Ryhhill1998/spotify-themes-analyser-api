@@ -138,7 +138,7 @@ async def get_top_emotions(
     """
 
     try:
-        top_emotions = await insights_service.get_top_emotions(time_range=time_range)
+        top_emotions = await insights_service.get_top_emotions(time_range.value)
         return top_emotions
     except InsightsServiceException as e:
         error_message = "Failed to retrieve the user's top emotions"
