@@ -123,8 +123,3 @@ async def get_tokens(refresh_token: Annotated[str, Body()], spotify_auth_service
     except SpotifyAuthServiceException as e:
         logger.error(f"Failed to refresh tokens from refresh_token: {refresh_token} - {e}")
         raise HTTPException(status_code=401, detail="Invalid refresh token.")
-
-
-@router.post("/test-refresh")
-def test_refresh():
-    return {"access_": "123", "refresh_": "456"}
