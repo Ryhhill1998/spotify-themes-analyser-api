@@ -16,10 +16,9 @@ router = APIRouter(prefix="/me")
 
 @router.get("/profile", response_model=SpotifyProfile)
 async def get_profile(
-        access_token: AccessTokenDependency,
         spotify_data_service: SpotifyDataServiceDependency
 ) -> SpotifyProfile:
-    profile_data = await spotify_data_service.get_profile_data(access_token)
+    profile_data = await spotify_data_service.get_profile_data()
     return profile_data
 
 
@@ -54,7 +53,7 @@ async def get_top_artists(
     try:
         top_artists = await spotify_data_service.get_top_items(
             item_type=ItemType.ARTISTS,
-            time_range=time_range,
+            time_range=time_range.value,
             limit=limit
         )
         return top_artists
@@ -99,7 +98,7 @@ async def get_top_tracks(
     try:
         top_tracks = await spotify_data_service.get_top_items(
             item_type=ItemType.TRACKS,
-            time_range=time_range,
+            time_range=time_range.value,
             limit=limit
         )
         return top_tracks

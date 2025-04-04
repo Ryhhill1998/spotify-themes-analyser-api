@@ -139,8 +139,7 @@ class SpotifyDataService(MusicService):
         )
         self.access_token = access_token
 
-    @cached_property
-    def _bearer_auth_headers(self) -> dict[str, str]:
+    def _get_bearer_auth_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.access_token}"}
 
     async def get_profile_data(self) -> SpotifyProfile:
@@ -168,7 +167,7 @@ class SpotifyDataService(MusicService):
         try:
             url = f"{self.base_url}/me"
 
-            data = await self.endpoint_requester.get(url=url, headers=self._bearer_auth_headers)
+            data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers())
 
             profile_data = SpotifyProfileData(**data)
 
@@ -344,7 +343,7 @@ class SpotifyDataService(MusicService):
             params = {"time_range": time_range, "limit": limit}
             url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
 
-            data = await self.endpoint_requester.get(url=url, headers=self._bearer_auth_headers)
+            data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers())
 
             top_items = [self._create_item(data=entry, item_type=item_type) for entry in data["items"]]
 
@@ -387,7 +386,7 @@ class SpotifyDataService(MusicService):
         try:
             url = f"{self.base_url}/{item_type.value}/{item_id}"
 
-            data = await self.endpoint_requester.get(url=url, headers=self._bearer_auth_headers)
+            data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers())
 
             item = self._create_item(data=data, item_type=item_type)
 

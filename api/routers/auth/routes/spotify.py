@@ -3,8 +3,9 @@ import urllib.parse
 from typing import Annotated
 
 from fastapi import Response, APIRouter, Request, Body, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from loguru import logger
+from pydantic import BaseModel
 
 from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
 from api.models import TokenData
@@ -54,7 +55,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     url = spotify_auth_service.generate_auth_url(state)
 
     response = create_custom_redirect_response(url)
-    response.set_cookie(key="oauth_state", value=state)
+    response.set_cookie(key="oauth_state", value=state, secure=True, samesite="none")
 
     return response
 
@@ -64,8 +65,7 @@ async def callback(
         code: str,
         state: str,
         request: Request,
-        settings: SettingsDependency,
-        spotify_auth_service: SpotifyAuthServiceDependency
+        settings: SettingsDependency, spotify_auth_service: SpotifyAuthServiceDependency
 ):
     """
     Handles the OAuth callback from Spotify.
@@ -102,16 +102,21 @@ async def callback(
         error_params = urllib.parse.urlencode({"error": "auth-failure"})
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
-    return RedirectResponse(f"{settings.frontend_url}/auth-success/?code={code}")
+    code_params = urllib.parse.urlencode({"code": code})
+    return RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
+
+
+class TokensRequest(BaseModel):
+    code: str
 
 
 @router.post("/tokens", response_model=TokenData)
-async def get_tokens(code: Annotated[str, Body()], spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
+async def get_tokens(tokens_request: TokensRequest, spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
     try:
-        tokens = await spotify_auth_service.create_tokens(code)
+        tokens = await spotify_auth_service.create_tokens(tokens_request.code)
         return tokens
     except SpotifyAuthServiceException as e:
-        logger.error(f"Failed to create tokens from code: {code} - {e}")
+        logger.error(f"Failed to create tokens from code: {tokens_request.code} - {e}")
         raise HTTPException(status_code=401, detail="Invalid authorisation code.")
 
 
