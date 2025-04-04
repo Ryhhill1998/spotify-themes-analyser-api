@@ -289,7 +289,7 @@ class InsightsService:
 
         try:
             track_response = await self.spotify_data_service.get_item_by_id(item_id=track_id, item_type=ItemType.TRACKS)
-            track = SpotifyTrack(**track_response.data.model_dump())
+            track = SpotifyTrack(**track_response.model_dump())
 
             lyrics_request = LyricsRequest(track_id=track.id, artist_name=track.artist.name, track_title=track.name)
             lyrics_response = await self.lyrics_service.get_lyrics(lyrics_request)
