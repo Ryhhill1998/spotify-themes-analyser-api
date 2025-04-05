@@ -156,6 +156,7 @@ class SpotifyAuthService(MusicService):
             headers = {"Authorization": f"Basic {self._auth_header}", "Content-Type": "application/x-www-form-urlencoded"}
 
             token_data = await self.endpoint_requester.post(url=url, headers=headers, data=data)
+            logger.info(f"{token_data = }")
 
             access_token = token_data.get("access_token")
             refresh_token = token_data.get("refresh_token", refresh_token)

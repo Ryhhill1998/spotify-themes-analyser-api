@@ -146,11 +146,6 @@ class SpotifyDataService(MusicService):
         """
         Fetches a user's profile from Spotify.
 
-        Parameters
-        ----------
-        access_token : str
-            The user's Spotify access token.
-
         Returns
         -------
         SpotifyProfile

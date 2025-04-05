@@ -18,8 +18,14 @@ router = APIRouter(prefix="/me")
 async def get_profile(
         spotify_data_service: SpotifyDataServiceDependency
 ) -> SpotifyProfile:
-    profile_data = await spotify_data_service.get_profile_data()
-    return profile_data
+    try:
+        profile_data = await spotify_data_service.get_profile_data()
+        return profile_data
+    except SpotifyDataServiceUnauthorisedException as e:
+        error_message = "Invalid access token"
+        logger.error(f"{error_message} - {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_message)
+
 
 
 @router.get("/top/artists", response_model=list[SpotifyArtist])

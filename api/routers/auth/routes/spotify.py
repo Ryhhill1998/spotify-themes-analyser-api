@@ -120,10 +120,14 @@ async def get_tokens(tokens_request: TokensRequest, spotify_auth_service: Spotif
         raise HTTPException(status_code=401, detail="Invalid authorisation code.")
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 @router.post("/refresh-tokens", response_model=TokenData)
-async def get_tokens(refresh_token: Annotated[str, Body()], spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
+async def get_tokens(refresh_request: RefreshRequest, spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
     try:
-        tokens = await spotify_auth_service.refresh_tokens(refresh_token)
+        tokens = await spotify_auth_service.refresh_tokens(refresh_request.refresh_token)
         return tokens
     except SpotifyAuthServiceException as e:
         logger.error(f"Failed to refresh tokens from refresh_token: {refresh_token} - {e}")
