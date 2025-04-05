@@ -190,7 +190,7 @@ class InsightsService:
         top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
         return top_emotions
 
-    async def get_top_emotions(self, time_range: str, limit: int = 30) -> list[TopEmotion]:
+    async def get_top_emotions(self, time_range: str, limit: int = 5) -> list[TopEmotion]:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
 
