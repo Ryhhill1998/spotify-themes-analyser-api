@@ -1,9 +1,8 @@
 import secrets
 import urllib.parse
-from typing import Annotated
 
-from fastapi import Response, APIRouter, Request, Body, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import Response, APIRouter, Request, HTTPException
+from fastapi.responses import RedirectResponse
 from loguru import logger
 from pydantic import BaseModel
 
@@ -130,5 +129,5 @@ async def get_tokens(refresh_request: RefreshRequest, spotify_auth_service: Spot
         tokens = await spotify_auth_service.refresh_tokens(refresh_request.refresh_token)
         return tokens
     except SpotifyAuthServiceException as e:
-        logger.error(f"Failed to refresh tokens from refresh_token: {refresh_token} - {e}")
+        logger.error(f"Failed to refresh tokens from refresh_token: {refresh_request.refresh_token} - {e}")
         raise HTTPException(status_code=401, detail="Invalid refresh token.")
