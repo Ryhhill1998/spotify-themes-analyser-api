@@ -308,7 +308,7 @@ class SpotifyDataService(MusicService):
             logger.error(error_message)
             raise SpotifyDataServiceException(error_message)
 
-    async def get_top_items(self, item_type: ItemType, time_range: str, limit: int) -> list[SpotifyItem]:
+    async def get_top_items(self, item_type: ItemType, time_range: str, limit: int = 30) -> list[SpotifyItem]:
         """
         Fetches a user's top items from Spotify.
 

@@ -219,11 +219,7 @@ class InsightsService:
 
         try:
             # get top tracks and refreshed tokens (if expired)
-            top_items = await self.spotify_data_service.get_top_items(
-                item_type=ItemType.TRACKS,
-                time_range=time_range,
-                limit=limit
-            )
+            top_items = await self.spotify_data_service.get_top_items(item_type=ItemType.TRACKS, time_range=time_range)
             self._check_data_not_empty(data=top_items, label="top tracks")
             top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_items]
 
