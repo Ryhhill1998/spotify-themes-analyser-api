@@ -35,10 +35,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     state = secrets.token_hex(16)
     url = spotify_auth_service.generate_auth_url(state)
 
-    response = Response(headers={"location": url}, status_code=307)
-    response.set_cookie(key="oauth_state", value=state, secure=True, samesite="none")
-
-    return response
+    return {"login_url": url, "oauth_state": state}
 
 
 @router.get("/callback")
