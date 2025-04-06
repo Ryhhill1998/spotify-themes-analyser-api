@@ -75,10 +75,10 @@ async def callback(
 
     # make sure that state stored in login route is same as that received after authenticating
     # prevents csrf
-    if request.cookies["oauth_state"] != state:
-        logger.error(f"invalid state param")
-        error_params = urllib.parse.urlencode({"error": "auth-failure"})
-        return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
+    # if request.cookies["oauth_state"] != state:
+    #     logger.error(f"invalid state param")
+    #     error_params = urllib.parse.urlencode({"error": "auth-failure"})
+    #     return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
     code_params = urllib.parse.urlencode({"code": code})
     return RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
