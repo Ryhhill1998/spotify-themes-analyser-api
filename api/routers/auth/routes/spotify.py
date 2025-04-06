@@ -102,7 +102,9 @@ async def callback(
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
     code_params = urllib.parse.urlencode({"code": code})
-    return RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
+    res = RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
+    res.set_cookie(key="test", value="value", httponly=True, secure=True, samesite="none", path="/")
+    return res
 
 
 class TokensRequest(BaseModel):
