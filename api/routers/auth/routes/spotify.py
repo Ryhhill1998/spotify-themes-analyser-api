@@ -13,24 +13,6 @@ from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 router = APIRouter(prefix="/spotify")
 
 
-def create_custom_redirect_response(redirect_url: str) -> Response:
-    """
-    Creates a custom redirect response.
-
-    Parameters
-    ----------
-    redirect_url : str
-        The URL to which the response should redirect.
-
-    Returns
-    -------
-    Response
-        A response object with a 307 redirect status and the location header set.
-    """
-
-    return Response(headers={"location": redirect_url}, status_code=307)
-
-
 @router.get("/login")
 async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     """
@@ -53,7 +35,7 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     state = secrets.token_hex(16)
     url = spotify_auth_service.generate_auth_url(state)
 
-    response = create_custom_redirect_response(url)
+    response = Response(headers={"location": url}, status_code=307)
     response.set_cookie(key="oauth_state", value=state, secure=True, samesite="none")
 
     return response
@@ -64,7 +46,7 @@ async def callback(
         code: str,
         state: str,
         request: Request,
-        settings: SettingsDependency, spotify_auth_service: SpotifyAuthServiceDependency
+        settings: SettingsDependency
 ):
     """
     Handles the OAuth callback from Spotify.
@@ -102,9 +84,7 @@ async def callback(
         return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
 
     code_params = urllib.parse.urlencode({"code": code})
-    res = RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
-    res.set_cookie(key="test", value="value", httponly=True, secure=True, samesite="none", path="/")
-    return res
+    return RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
 
 
 class TokensRequest(BaseModel):
