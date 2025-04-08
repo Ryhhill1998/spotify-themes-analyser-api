@@ -4,7 +4,7 @@ from fastapi import Response, APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel
 
-from api.dependencies import SpotifyAuthServiceDependency
+from api.dependencies import SpotifyAuthServiceDependency, SpotifyDataServiceDependency, DBServiceDependency
 from api.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 
@@ -41,9 +41,23 @@ class TokensRequest(BaseModel):
 
 
 @router.post("/tokens", response_model=TokenData)
-async def get_tokens(tokens_request: TokensRequest, spotify_auth_service: SpotifyAuthServiceDependency) -> TokenData:
+async def get_tokens(
+        tokens_request: TokensRequest,
+        spotify_auth_service: SpotifyAuthServiceDependency,
+        spotify_data_service: SpotifyDataServiceDependency,
+        db_service: DBServiceDependency
+) -> TokenData:
     try:
         tokens = await spotify_auth_service.create_tokens(tokens_request.code)
+
+        # use access_token to get user_id from Spotify
+        spotify_data_service.access_token = tokens.access_token
+        profile_data = await spotify_data_service.get_profile_data()
+        user_id = profile_data.id
+
+        # create new user in db
+        db_service.create_user(user_id=user_id, refresh_token=tokens.refresh_token)
+
         return tokens
     except SpotifyAuthServiceException as e:
         logger.error(f"Failed to create tokens from code: {tokens_request.code} - {e}")
