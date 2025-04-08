@@ -6,10 +6,12 @@ class DBService:
         self.conn = conn
 
     def create_user(self, user_id: str, refresh_token: str):
-        with self.conn.cursor() as cur:
-            insert_statement = """
-                INSERT INTO spotify_user(id, refresh_token)
-                VALUES(%s, %s)
-            """
-            cur.execute(insert_statement, (user_id, refresh_token))
-            self.conn.commit()
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO spotify_user (id, refresh_token) VALUES (%s, %s)",
+                    (user_id, refresh_token)
+                )
+                self.conn.commit()
+        except psycopg2.IntegrityError:
+            self.conn.rollback()
