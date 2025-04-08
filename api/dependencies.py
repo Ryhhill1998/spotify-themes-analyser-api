@@ -1,9 +1,11 @@
 from functools import lru_cache
 from typing import Annotated
 
+import psycopg2
 from fastapi import Depends, Request, HTTPException
 
 from api.services.analysis_service import AnalysisService
+from api.services.db_service import DBService
 from api.services.insights_service import InsightsService
 from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
@@ -22,12 +24,7 @@ SettingsDependency = Annotated[Settings, Depends(get_settings)]
 
 def get_token_from_cookies(request: Request, token_key: str) -> str:
     cookies = request.cookies
-    token = cookies.get(token_key)
-
-    if not token:
-        raise HTTPException(status_code=401, detail="Requests must include an access token.")
-
-    return token
+    return cookies.get(token_key)
 
 
 def get_access_token_from_cookies(request: Request) -> str:
@@ -49,6 +46,23 @@ def get_endpoint_requester(request: Request) -> EndpointRequester:
 
 
 EndpointRequesterDependency = Annotated[EndpointRequester, Depends(get_endpoint_requester)]
+
+
+def get_db_service(settings: SettingsDependency):
+    conn = psycopg2.connect(
+        host=settings.db_host,
+        database=settings.db_name,
+        user=settings.db_user,
+        password=settings.db_pass
+    )
+
+    try:
+        yield DBService(conn)
+    finally:
+        conn.close()
+
+
+DBServiceDependency = Annotated[DBService, Depends(get_db_service)]
 
 
 def get_spotify_auth_service(
