@@ -1,12 +1,10 @@
 import secrets
-import urllib.parse
 
-from fastapi import Response, APIRouter, Request, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi import Response, APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel
 
-from api.dependencies import SpotifyAuthServiceDependency, SettingsDependency
+from api.dependencies import SpotifyAuthServiceDependency
 from api.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 
@@ -36,52 +34,6 @@ async def login(spotify_auth_service: SpotifyAuthServiceDependency):
     url = spotify_auth_service.generate_auth_url(state)
 
     return {"login_url": url, "oauth_state": state}
-
-
-@router.get("/callback")
-async def callback(
-        code: str,
-        state: str,
-        request: Request,
-        settings: SettingsDependency
-):
-    """
-    Handles the OAuth callback from Spotify.
-
-    After a user logs in with Spotify, this route processes the callback, verifies the state parameter to prevent CSRF
-    attacks, retrieves access and refresh tokens and redirects the user back to the frontend of the application.
-
-    If authentication fails, access and refresh tokens will not be set in the cookies and the user will be redirected
-    to the authentication-failure route in the frontend.
-
-    Parameters
-    ----------
-    code : str
-        The authorization code returned by Spotify after a successful login.
-    state : str
-        The state parameter received from Spotify for CSRF validation.
-    request : Request
-        The FastAPI request object, used to access cookies for state validation.
-    spotify_auth_service : SpotifyAuthServiceDependency
-        The Spotify authentication service responsible for exchanging the authorization code for tokens.
-    settings : SettingsDependency
-        The application settings containing environment configuration values.
-
-    Returns
-    -------
-    Response
-        A redirect response to the frontend application with access and refresh tokens stored in cookies.
-    """
-
-    # make sure that state stored in login route is same as that received after authenticating
-    # prevents csrf
-    # if request.cookies["oauth_state"] != state:
-    #     logger.error(f"invalid state param")
-    #     error_params = urllib.parse.urlencode({"error": "auth-failure"})
-    #     return RedirectResponse(f"{settings.frontend_url}/#{error_params}")
-
-    code_params = urllib.parse.urlencode({"code": code})
-    return RedirectResponse(f"{settings.frontend_url}/login?{code_params}")
 
 
 class TokensRequest(BaseModel):
