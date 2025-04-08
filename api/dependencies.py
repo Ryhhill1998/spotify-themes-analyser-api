@@ -1,9 +1,11 @@
 from functools import lru_cache
 from typing import Annotated
 
+import psycopg2
 from fastapi import Depends, Request, HTTPException
 
 from api.services.analysis_service import AnalysisService
+from api.services.db_service import DBService
 from api.services.insights_service import InsightsService
 from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
@@ -49,6 +51,16 @@ def get_endpoint_requester(request: Request) -> EndpointRequester:
 
 
 EndpointRequesterDependency = Annotated[EndpointRequester, Depends(get_endpoint_requester)]
+
+
+def get_db_service(settings: SettingsDependency) -> DBService:
+    conn = psycopg2.connect(
+        host=settings.db_host,
+        database=settings.db_name,
+        user=settings.db_user,
+        password=settings.db_pass
+    )
+    return DBService(conn)
 
 
 def get_spotify_auth_service(
