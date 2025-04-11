@@ -1,8 +1,8 @@
 from functools import lru_cache
 from typing import Annotated
 
-import psycopg2
-from fastapi import Depends, Request, HTTPException
+import mysql.connector
+from fastapi import Depends, Request
 
 from api.services.analysis_service import AnalysisService
 from api.services.db_service import DBService
@@ -49,7 +49,7 @@ EndpointRequesterDependency = Annotated[EndpointRequester, Depends(get_endpoint_
 
 
 def get_db_service(settings: SettingsDependency):
-    conn = psycopg2.connect(
+    conn = mysql.connector.connect(
         host=settings.db_host,
         database=settings.db_name,
         user=settings.db_user,
