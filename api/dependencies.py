@@ -92,7 +92,7 @@ def get_spotify_data_service(
         client_secret=settings.spotify_client_secret,
         base_url=settings.spotify_data_base_url,
         endpoint_requester=endpoint_requester,
-        access_token="BQDhRijOwT3-ruc3-4TfQxy6D1kUDSAg0BGUJqC7GLKelaXiT3rscZXWp7XMVI0cLrwZtfhgHZjqYMJ4TMesVhoLw9QDhrUakAoUakw8pPHVByE4wTKlZJujOijfOgp7cHzlpclxSQuTD_gA56vc7xW7aRbJoYd81sjKYX8tETRQzbt9_bjP76DiMTptiw_3B7ZP--ZLm1mDHGi7Xwu0T63Cgg9DfjDikiCQZPEaejBLiMAuSifM"
+        access_token="BQAzZ8BWhlwNbvtx2oyRFOsfh3JNJcLW17pbyOE_hVQPIKre-xWeEtja_8lqY2zOc4po9zl2RQB4G314QFJp_kf80IOr3fF2lFWcK1xwgzuzkety-EHzVwAjbgJMxOOQiOVDEhXCnNzNShkLbbRq2C3TZOZ2VtgPWfIdrh60rb9wmmnPtzGJCK85w8BFcNPRAQEXc8FnPkIA4LTLIoEz7Fe1DV3A6YOb5v4gr6dpmQV1viZMYA8F"
     )
 
 

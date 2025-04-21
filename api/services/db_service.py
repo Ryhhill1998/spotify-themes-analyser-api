@@ -31,22 +31,37 @@ class DBService:
             logger.error(f"{error_message} - {e}")
             raise DBServiceException(error_message)
 
-    def get_top_artists(self, user_id: str, time_range: TimeRange) -> list[dict]:
-        date_today = datetime.now(timezone.utc)
-        date_yesterday = date_today - timedelta(days=1)
-        date_1 = date_today.strftime("%Y-%m-%d")
-        date_2 = date_yesterday.strftime("%Y-%m-%d")
+    def get_latest_dates(self, user_id: str, limit: int = 2) -> list[str]:
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            select_statement = f"""
+                SELECT collected_date as day
+                FROM top_artist
+                WHERE spotify_user_id = %s
+                GROUP BY day
+                ORDER BY day DESC
+                LIMIT {limit};
+            """
+            cursor.execute(select_statement, (user_id,))
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except mysql.connector.Error as e:
+            error_message = f"Failed to get latest dates. User ID: {user_id}"
+            logger.error(f"{error_message} - {e}")
+            raise DBServiceException(error_message)
 
+    def get_top_artists(self, user_id: str, time_range: TimeRange, collected_date: str) -> list[dict]:
         try:
             cursor = self.connection.cursor(dictionary=True)
             select_statement = f"""
                 SELECT * FROM top_artist
                 WHERE spotify_user_id = (%s)
                 AND time_range = (%s)
-                AND collected_date IN ((%s), (%s))
-                ORDER BY collected_date DESC, position ASC;
+                AND collected_date = (%s)
+                ORDER BY position ASC;
             """
-            cursor.execute(select_statement, (user_id, time_range.value, date_1, date_2))
+            cursor.execute(select_statement, (user_id, time_range.value, collected_date))
             results = cursor.fetchall()
             cursor.close()
             return results

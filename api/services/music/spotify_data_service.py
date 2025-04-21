@@ -1,6 +1,5 @@
 from enum import Enum
 import urllib.parse
-from functools import cached_property
 
 from loguru import logger
 
@@ -392,6 +391,31 @@ class SpotifyDataService(MusicService):
             raise SpotifyDataServiceUnauthorisedException(error_message)
         except EndpointRequesterNotFoundException as e:
             error_message = f"Requested Spotify item not found. Item ID: {item_id}, item type: {item_type}"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceNotFoundException(error_message)
+        except EndpointRequesterException as e:
+            error_message = "Failed to make request to Spotify API"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceException(error_message)
+
+    async def get_many_items_by_ids(self, item_ids: list[str], item_type: ItemType) -> list[SpotifyItem]:
+        try:
+            url = f"{self.base_url}/{item_type.value}"
+            params = {"ids": ",".join(item_ids)}
+
+            data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers(), params=params)
+
+            print(f"{data = }")
+
+            items = [self._create_item(data=entry, item_type=item_type) for entry in data[item_type.value]]
+
+            return items
+        except EndpointRequesterUnauthorisedException as e:
+            error_message = "Invalid Spotify API access token"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceUnauthorisedException(error_message)
+        except EndpointRequesterNotFoundException as e:
+            error_message = f"Requested Spotify items not found. Item type: {item_type}"
             logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceNotFoundException(error_message)
         except EndpointRequesterException as e:
