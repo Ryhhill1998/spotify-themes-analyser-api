@@ -1,18 +1,56 @@
+from datetime import datetime, timezone, timedelta
+
 import mysql.connector
 from mysql.connector.pooling import PooledMySQLConnection
+from loguru import logger
+
+from api.services.music.spotify_data_service import TimeRange
+
+
+class DBServiceException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
 
 
 class DBService:
-    def __init__(self, conn: PooledMySQLConnection):
-        self.conn = conn
+    def __init__(self, connection: PooledMySQLConnection):
+        self.connection = connection
 
     def create_user(self, user_id: str, refresh_token: str):
         try:
-            with self.conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO spotify_user (id, refresh_token) VALUES (%s, %s);",
-                    (user_id, refresh_token)
-                )
-                self.conn.commit()
-        except mysql.connector.IntegrityError:
-            self.conn.rollback()
+            cursor = self.connection.cursor()
+            cursor.execute(
+                "INSERT INTO spotify_user (id, refresh_token) VALUES (%s, %s);",
+                (user_id, refresh_token)
+            )
+            cursor.close()
+            self.connection.commit()
+        except mysql.connector.Error as e:
+            self.connection.rollback()
+            error_message = f"Failed to create user. User ID: {user_id}, refresh token: {refresh_token}"
+            logger.error(f"{error_message} - {e}")
+            raise DBServiceException(error_message)
+
+    def get_top_artists(self, user_id: str, time_range: TimeRange) -> list[dict]:
+        date_today = datetime.now(timezone.utc)
+        date_yesterday = date_today - timedelta(days=1)
+        date_1 = date_today.strftime("%Y-%m-%d")
+        date_2 = date_yesterday.strftime("%Y-%m-%d")
+
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            select_statement = f"""
+                SELECT * FROM top_artist
+                WHERE spotify_user_id = (%s)
+                AND time_range = (%s)
+                AND collected_date IN ((%s), (%s))
+                ORDER BY collected_date DESC, position ASC;
+            """
+            cursor.execute(select_statement, (user_id, time_range.value, date_1, date_2))
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except mysql.connector.Error as e:
+            error_message = f"Failed to get top artists. User ID: {user_id}, time range: {time_range.value}"
+            logger.error(f"{error_message} - {e}")
+            raise DBServiceException(error_message)

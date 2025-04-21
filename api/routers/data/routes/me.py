@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import Field
 
-from api.dependencies import AccessTokenDependency, SpotifyDataServiceDependency, InsightsServiceDependency
+from api.dependencies import AccessTokenDependency, SpotifyDataServiceDependency, InsightsServiceDependency, \
+    DBServiceDependency
 from api.models import SpotifyArtist, SpotifyProfile
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import ItemType, TimeRange, SpotifyDataServiceException, \
@@ -28,12 +29,14 @@ async def get_profile(
 
 
 
-@router.get("/top/artists", response_model=list[SpotifyArtist])
+@router.get("/top/artists")
 async def get_top_artists(
+        user_id: str,
         spotify_data_service: SpotifyDataServiceDependency,
+        db_service: DBServiceDependency,
         time_range: TimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
-) -> list[SpotifyArtist]:
+):
     """
     Retrieves the user's top artists from Spotify.
 
@@ -57,6 +60,12 @@ async def get_top_artists(
     """
 
     try:
+        # make request to db for latest two entries
+        top_artists = db_service.get_top_artists(user_id=user_id, time_range=time_range)
+        return top_artists
+        # if entries, convert item ids to spotify item objects
+        # if two entries, calculate position change property and add to object
+        # if no entries, get data from spotify
         top_artists = await spotify_data_service.get_top_items(
             item_type=ItemType.ARTISTS,
             time_range=time_range.value,
