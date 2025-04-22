@@ -196,6 +196,7 @@ class SpotifyItem(SpotifyItemBase):
 
     images: list[SpotifyImage]
     spotify_url: str
+    position_change: str | None = None
 
 
 class SpotifyArtist(SpotifyItem):
@@ -216,7 +217,6 @@ class SpotifyArtist(SpotifyItem):
     genres: list[str]
     followers: int
     popularity: int
-    position_change: str | None = None
 
 
 class SpotifyTrack(SpotifyItem):

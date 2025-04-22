@@ -3,7 +3,7 @@ from loguru import logger
 
 import pydantic
 
-from api.models import EmotionalProfileResponse, EmotionalTagsResponse, EmotionalTagsRequest, EmotionalProfileRequest
+from api.data_structures.models import EmotionalProfileResponse, EmotionalTagsResponse, EmotionalTagsRequest, EmotionalProfileRequest
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 
 

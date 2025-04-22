@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from api.models import TaggedLyricsResponse
+from api.data_structures.models import TaggedLyricsResponse
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException
 

@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
+from api.data_structures.enums import TopItemType
 from api.dependencies import SpotifyDataServiceDependency, InsightsServiceDependency
-from api.models import Emotion, EmotionalTagsResponse, SpotifyTrack
+from api.data_structures.models import Emotion, EmotionalTagsResponse, SpotifyTrack
 from api.services.insights_service import InsightsServiceException
-from api.services.music.spotify_data_service import ItemType, SpotifyDataServiceNotFoundException, \
-    SpotifyDataServiceException
+from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException
 
 router = APIRouter(prefix="/tracks")
 
@@ -37,7 +37,7 @@ async def get_track_by_id(track_id: str, spotify_data_service: SpotifyDataServic
     """
 
     try:
-        track = await spotify_data_service.get_item_by_id(item_id=track_id, item_type=ItemType.TRACKS)
+        track = await spotify_data_service.get_item_by_id(item_id=track_id, item_type=TopItemType.TRACK)
         return track
     except SpotifyDataServiceNotFoundException as e:
         error_message = "Could not find the requested track"

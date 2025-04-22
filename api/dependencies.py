@@ -11,6 +11,7 @@ from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
 from api.services.music.spotify_auth_service import SpotifyAuthService
 from api.services.music.spotify_data_service import SpotifyDataService
+from api.services.top_items_service import TopItemsService
 from api.settings import Settings
 
 
@@ -85,14 +86,14 @@ SpotifyAuthServiceDependency = Annotated[SpotifyAuthService, Depends(get_spotify
 def get_spotify_data_service(
         settings: SettingsDependency,
         endpoint_requester: EndpointRequesterDependency,
-        access_token: AccessTokenDependency
+        # access_token: AccessTokenDependency
 ) -> SpotifyDataService:
     return SpotifyDataService(
         client_id=settings.spotify_client_id,
         client_secret=settings.spotify_client_secret,
         base_url=settings.spotify_data_base_url,
         endpoint_requester=endpoint_requester,
-        access_token=access_token
+        access_token="BQBsFgyXUma6XexGSS_i2_BoIw_c-n6GG7PTZ4IXyekauyThoZAm7Bg9aHrV3EQiYxug6qefUlO_u_Dk12QQQ3Kz0p1Uu9lQxwN-1zSgpmN66GyzqW7Zep8yWhTkc25NmrSKZaPDhYbhcqwCWG_fsnAyf4YL0ztTQEVpl-xBzIrnsQ8n0hWv4MAhq0vqLVQ9sF7dSPZEBQ0pTPqs7Ii-gG8SzFCCVfJnyoBc-ClfhDGePl63Qk1C"
     )
 
 
@@ -132,3 +133,13 @@ def get_insights_service(
 
 
 InsightsServiceDependency = Annotated[InsightsService, Depends(get_insights_service)]
+
+
+def get_top_items_service(
+        db_service: DBServiceDependency,
+        spotify_data_service: SpotifyDataServiceDependency
+) -> TopItemsService:
+    return TopItemsService(db_service=db_service, spotify_data_service=spotify_data_service)
+
+
+TopItemsServiceDependency = Annotated[TopItemsService, Depends(get_top_items_service)]

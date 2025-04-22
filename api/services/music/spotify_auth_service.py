@@ -5,7 +5,7 @@ from loguru import logger
 
 import pydantic
 
-from api.models import TokenData
+from api.data_structures.models import TokenData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException
 from api.services.music.music_service import MusicService
 

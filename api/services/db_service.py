@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector.pooling import PooledMySQLConnection
 from loguru import logger
 
-from api.services.music.spotify_data_service import TimeRange
+from api.data_structures.enums import TopItemType, TopItemTimeRange
 
 
 class DBServiceException(Exception):
@@ -29,51 +29,31 @@ class DBService:
             logger.error(f"{error_message} - {e}")
             raise DBServiceException(error_message)
 
-    def get_latest_dates(self, user_id: str, limit: int = 2) -> list[str]:
-        try:
-            cursor = self.connection.cursor(dictionary=True)
-            select_statement = f"""
-                SELECT collected_date as day
-                FROM top_artist
-                WHERE spotify_user_id = %s
-                GROUP BY day
-                ORDER BY day DESC
-                LIMIT {limit};
-            """
-            cursor.execute(select_statement, (user_id,))
-            results = cursor.fetchall()
-            cursor.close()
-            return results
-        except mysql.connector.Error as e:
-            error_message = f"Failed to get latest dates. User ID: {user_id}"
-            logger.error(f"{error_message} - {e}")
-            raise DBServiceException(error_message)
-
-    def get_top_artists(self, user_id: str, time_range: TimeRange) -> list[dict]:
+    def get_top_items(self, user_id: str, item_type: TopItemType, time_range: TopItemTimeRange) -> list[dict]:
         try:
             cursor = self.connection.cursor(dictionary=True)
             select_statement = (
                 "WITH most_recent_date AS ("
                     "SELECT collected_date "
-                    "FROM top_artist "
+                    f"FROM top_{item_type.value} "
                     "WHERE spotify_user_id = %s "
                     "AND time_range = %s "
                     "ORDER BY collected_date DESC "
                     "LIMIT 1"
                 ")"
                 "SELECT * " 
-                "FROM top_artist ta "
+                f"FROM top_{item_type.value} t "
                 "JOIN most_recent_date rd " 
-                "ON ta.collected_date = rd.collected_date "
-                "WHERE ta.spotify_user_id = %s "
-                "AND ta.time_range = %s "
-                "ORDER BY ta.position;"
+                "ON t.collected_date = rd.collected_date "
+                "WHERE t.spotify_user_id = %s "
+                "AND t.time_range = %s "
+                "ORDER BY t.position;"
             )
             cursor.execute(select_statement, (user_id, time_range.value, user_id, time_range.value))
             results = cursor.fetchall()
             cursor.close()
             return results
         except mysql.connector.Error as e:
-            error_message = f"Failed to get top artists. User ID: {user_id}, time range: {time_range.value}"
+            error_message = f"Failed to get top {item_type.value}s. User ID: {user_id}, time range: {time_range.value}"
             logger.error(f"{error_message} - {e}")
             raise DBServiceException(error_message)
