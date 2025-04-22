@@ -1,5 +1,3 @@
-from datetime import datetime, timezone, timedelta
-
 import mysql.connector
 from mysql.connector.pooling import PooledMySQLConnection
 from loguru import logger

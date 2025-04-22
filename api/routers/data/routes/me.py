@@ -10,6 +10,7 @@ import pandas as pd
 from api.dependencies import AccessTokenDependency, SpotifyDataServiceDependency, InsightsServiceDependency, \
     DBServiceDependency
 from api.models import SpotifyArtist, SpotifyProfile
+from api.services.db_service import DBServiceException
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import ItemType, TimeRange, SpotifyDataServiceException, \
     SpotifyDataServiceUnauthorisedException
@@ -44,8 +45,14 @@ async def get_top_artists(
 
     Parameters
     ----------
+    user_id : str
+        The spotify user ID of the signed in user.
     spotify_data_service : SpotifyDataServiceDependency
         Dependency for retrieving the user's top artists from the Spotify API.
+    db_service : DBServiceDependency
+        Dependency for retrieving the user's top artists from the database.
+    time_range : TimeRange
+        The time range to retrieve the top artists for.
     limit : int
         Limit to specify the number of top artists to retrieve (default is 50, must be at least 10 but no more than 50).
 
@@ -62,39 +69,50 @@ async def get_top_artists(
     """
 
     try:
-        top_artists_db = db_service.get_top_artists(user_id=user_id, time_range=time_range)
+        try:
+            top_artists_db = db_service.get_top_artists(user_id=user_id, time_range=time_range)
 
-        if not top_artists_db:
+            if not top_artists_db:
+                top_artists = spotify_data_service.get_top_items(
+                    item_type=ItemType.ARTISTS,
+                    time_range=time_range,
+                    limit=limit
+                )
+                return top_artists
+
+            # get spotify artist objects
+            ids = list(map(lambda db_artist: db_artist["artist_id"], top_artists_db))
+            spotify_top_artists = await spotify_data_service.get_many_items_by_ids(item_ids=ids, item_type=ItemType.ARTISTS)
+            artist_id_to_top_artist_map = {artist.id: artist for artist in spotify_top_artists}
+
+            # combine records with artist data from spotify
+            top_artists = []
+
+            for db_artist in top_artists_db:
+                artist_id = db_artist["artist_id"]
+                artist_position_change = db_artist["position_change"]
+                artist_is_new = db_artist["is_new"]
+
+                artist = artist_id_to_top_artist_map[artist_id]
+
+                if artist_is_new:
+                    artist.position_change = "new"
+                else:
+                    artist.position_change = artist_position_change
+
+                top_artists.append(artist)
+
+            return top_artists
+        except DBServiceException as e:
+            error_message = "Failed to retrieve the user's top artists from the db"
+            logger.error(f"{error_message} - {e}")
+
             top_artists = spotify_data_service.get_top_items(
                 item_type=ItemType.ARTISTS,
                 time_range=time_range,
                 limit=limit
             )
             return top_artists
-
-        # get spotify artist objects
-        ids = list(map(lambda db_artist: db_artist["artist_id"], top_artists_db))
-        spotify_top_artists = await spotify_data_service.get_many_items_by_ids(item_ids=ids, item_type=ItemType.ARTISTS)
-        artist_id_to_top_artist_map = {artist.id: artist for artist in spotify_top_artists}
-
-        # combine records with artist data from spotify
-        top_artists = []
-
-        for db_artist in top_artists_db:
-            artist_id = db_artist["artist_id"]
-            artist_position_change = db_artist["position_change"]
-            artist_is_new = db_artist["is_new"]
-
-            artist = artist_id_to_top_artist_map[artist_id]
-
-            if artist_is_new:
-                artist.position_change = "new"
-            else:
-                artist.position_change = artist_position_change
-
-            top_artists.append(artist)
-
-        return top_artists
     except SpotifyDataServiceUnauthorisedException as e:
         error_message = "Invalid access token"
         logger.error(f"{error_message} - {e}")
