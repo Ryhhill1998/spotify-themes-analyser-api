@@ -51,17 +51,27 @@ class DBService:
             logger.error(f"{error_message} - {e}")
             raise DBServiceException(error_message)
 
-    def get_top_artists(self, user_id: str, time_range: TimeRange, collected_date: str) -> list[dict]:
+    def get_top_artists(self, user_id: str, time_range: TimeRange) -> list[dict]:
         try:
             cursor = self.connection.cursor(dictionary=True)
-            select_statement = f"""
-                SELECT * FROM top_artist
-                WHERE spotify_user_id = (%s)
-                AND time_range = (%s)
-                AND collected_date = (%s)
-                ORDER BY position ASC;
-            """
-            cursor.execute(select_statement, (user_id, time_range.value, collected_date))
+            select_statement = (
+                "WITH most_recent_date AS ("
+                    "SELECT collected_date "
+                    "FROM top_artist "
+                    "WHERE spotify_user_id = %s "
+                    "AND time_range = %s "
+                    "ORDER BY collected_date DESC "
+                    "LIMIT 1"
+                ")"
+                "SELECT * " 
+                "FROM top_artist ta "
+                "JOIN most_recent_date rd " 
+                "ON ta.collected_date = rd.collected_date "
+                "WHERE ta.spotify_user_id = %s "
+                "AND ta.time_range = %s "
+                "ORDER BY ta.position;"
+            )
+            cursor.execute(select_statement, (user_id, time_range.value, user_id, time_range.value))
             results = cursor.fetchall()
             cursor.close()
             return results

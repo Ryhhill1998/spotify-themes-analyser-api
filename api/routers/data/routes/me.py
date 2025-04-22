@@ -62,67 +62,36 @@ async def get_top_artists(
     """
 
     try:
-        # get 2 latest dates of entry
-        latest_dates = db_service.get_latest_dates(user_id=user_id, limit=2)
+        top_artists_db = db_service.get_top_artists(user_id=user_id, time_range=time_range)
 
-        if not latest_dates:
-            top_artists = await spotify_data_service.get_top_items(
+        if not top_artists_db:
+            top_artists = spotify_data_service.get_top_items(
                 item_type=ItemType.ARTISTS,
-                time_range=time_range.value,
+                time_range=time_range,
                 limit=limit
             )
             return top_artists
 
-        # get most recently collected top artists data
-        top_artists_latest = db_service.get_top_artists(
-            user_id=user_id,
-            time_range=time_range,
-            collected_date=latest_dates[0]["day"]
-        )
-
-        if len(latest_dates) == 1:
-            ids = list(map(lambda artist: artist["artist_id"], top_artists_latest))
-            spotify_top_artists = await spotify_data_service.get_many_items_by_ids(
-                item_ids=ids,
-                item_type=ItemType.ARTISTS
-            )
-            return spotify_top_artists
-
-        # get second most recently collected top artists data
-        top_artists_prev = db_service.get_top_artists(
-            user_id=user_id,
-            time_range=time_range,
-            collected_date=latest_dates[1]["day"]
-        )
-
-        # find position changes for latest top artists
-        latest_df = pd.DataFrame(top_artists_latest)
-        prev_df = pd.DataFrame(top_artists_prev)
-        merged_df = pd.merge(
-            latest_df,
-            prev_df[['artist_id', 'position']],
-            on=['artist_id'],
-            how='left',
-            suffixes=('_latest', '_prev')
-        )
-        merged_df["position_change"] = merged_df.apply(
-            lambda row: 'new' if pd.isna(row['position_prev']) else row['position_prev'] - row['position_latest'],
-            axis=1
-        )
-        records = merged_df[["artist_id", "position_change"]].to_dict('records')
-
         # get spotify artist objects
-        ids = merged_df["artist_id"].tolist()
+        ids = list(map(lambda db_artist: db_artist["artist_id"], top_artists_db))
         spotify_top_artists = await spotify_data_service.get_many_items_by_ids(item_ids=ids, item_type=ItemType.ARTISTS)
         artist_id_to_top_artist_map = {artist.id: artist for artist in spotify_top_artists}
 
         # combine records with artist data from spotify
         top_artists = []
 
-        for record in records:
-            artist_id = record["artist_id"]
+        for db_artist in top_artists_db:
+            artist_id = db_artist["artist_id"]
+            artist_position_change = db_artist["position_change"]
+            artist_is_new = db_artist["is_new"]
+
             artist = artist_id_to_top_artist_map[artist_id]
-            artist.position_change = record["position_change"]
+
+            if artist_is_new:
+                artist.position_change = "new"
+            else:
+                artist.position_change = artist_position_change
+
             top_artists.append(artist)
 
         return top_artists

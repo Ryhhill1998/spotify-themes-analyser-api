@@ -405,8 +405,6 @@ class SpotifyDataService(MusicService):
 
             data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers(), params=params)
 
-            print(f"{data = }")
-
             items = [self._create_item(data=entry, item_type=item_type) for entry in data[item_type.value]]
 
             return items

@@ -216,7 +216,7 @@ class SpotifyArtist(SpotifyItem):
     genres: list[str]
     followers: int
     popularity: int
-    position_change: int | None = None
+    position_change: str | None = None
 
 
 class SpotifyTrack(SpotifyItem):
