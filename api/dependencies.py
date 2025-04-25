@@ -23,20 +23,27 @@ def get_settings() -> Settings:
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 
 
-def get_token_from_cookies(request: Request, token_key: str) -> str:
+def get_item_from_cookies(request: Request, item_key: str) -> str:
     cookies = request.cookies
-    return cookies.get(token_key)
+    return cookies.get(item_key)
+
+
+def get_user_id_from_cookies(request: Request) -> str:
+    return get_item_from_cookies(request=request, item_key="user_id")
+
+
+UserIdDependency = Annotated[str, Depends(get_user_id_from_cookies)]
 
 
 def get_access_token_from_cookies(request: Request) -> str:
-    return get_token_from_cookies(request=request, token_key="access_token")
+    return get_item_from_cookies(request=request, item_key="access_token")
 
 
 AccessTokenDependency = Annotated[str, Depends(get_access_token_from_cookies)]
 
 
 def get_refresh_token_from_cookies(request: Request) -> str:
-    return get_token_from_cookies(request=request, token_key="refresh_token")
+    return get_item_from_cookies(request=request, item_key="refresh_token")
 
 
 RefreshTokenDependency = Annotated[str, Depends(get_refresh_token_from_cookies)]

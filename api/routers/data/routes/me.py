@@ -7,7 +7,7 @@ from pydantic import Field
 
 from api.data_structures.enums import TopItemTimeRange
 from api.dependencies import SpotifyDataServiceDependency, InsightsServiceDependency, DBServiceDependency, \
-    TopItemsServiceDependency
+    TopItemsServiceDependency, UserIdDependency
 from api.data_structures.models import SpotifyProfile, SpotifyArtist
 from api.services.insights_service import InsightsServiceException
 from api.services.music.spotify_data_service import SpotifyDataServiceException, SpotifyDataServiceUnauthorisedException
@@ -30,7 +30,7 @@ async def get_profile(
 
 @router.get("/top/artists", response_model=list[SpotifyArtist])
 async def get_top_artists(
-        user_id: str,
+        user_id: UserIdDependency,
         top_items_service: TopItemsServiceDependency,
         time_range: TopItemTimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
@@ -40,8 +40,8 @@ async def get_top_artists(
 
     Parameters
     ----------
-    user_id : str
-        The spotify user ID of the signed-in user.
+    user_id : UserIdDependency
+        Dependency used to extract spotify user ID of the signed-in user from request cookies.
     top_items_service : top_items_service
         Dependency for retrieving the user's top artists from the database or the Spotify API.
     time_range : TopItemTimeRange
@@ -76,7 +76,7 @@ async def get_top_artists(
 
 @router.get("/top/tracks")
 async def get_top_tracks(
-        user_id: str,
+        user_id: UserIdDependency,
         top_items_service: TopItemsServiceDependency,
         time_range: TopItemTimeRange,
         limit: Annotated[int, Field(ge=10, le=50)] = 50
@@ -86,8 +86,8 @@ async def get_top_tracks(
 
     Parameters
     ----------
-    user_id : str
-        The spotify user ID of the signed-in user.
+    user_id : UserIdDependency
+        Dependency used to extract spotify user ID of the signed-in user from request cookies.
     top_items_service : top_items_service
         Dependency for retrieving the user's top tracks from the database or the Spotify API.
     time_range : TopItemTimeRange

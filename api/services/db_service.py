@@ -23,6 +23,8 @@ class DBService:
             )
             cursor.close()
             self.connection.commit()
+        except mysql.connector.IntegrityError as e:
+            logger.info(f"User already exists: {user_id} - {e}")
         except mysql.connector.Error as e:
             self.connection.rollback()
             error_message = f"Failed to create user. User ID: {user_id}, refresh token: {refresh_token}"
