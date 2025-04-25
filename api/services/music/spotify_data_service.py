@@ -1,8 +1,6 @@
-from enum import Enum
 import urllib.parse
 
 from loguru import logger
-
 import pydantic
 
 from api.data_structures.enums import TopItemType
