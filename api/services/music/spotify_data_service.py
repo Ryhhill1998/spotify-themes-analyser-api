@@ -3,7 +3,7 @@ import urllib.parse
 from loguru import logger
 import pydantic
 
-from api.data_structures.enums import TopItemType
+from api.data_structures.enums import TopItemType, TopItemTimeRange
 from api.data_structures.models import SpotifyItem, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, SpotifyTrackData, \
     SpotifyArtistData, SpotifyProfile, SpotifyProfileData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
@@ -271,7 +271,12 @@ class SpotifyDataService(MusicService):
             logger.error(error_message)
             raise SpotifyDataServiceException(error_message)
 
-    async def get_top_items(self, item_type: TopItemType, time_range: str, limit: int = 30) -> list[SpotifyItem]:
+    async def get_top_items(
+            self,
+            item_type: TopItemType,
+            time_range: TopItemTimeRange,
+            limit: int = 30
+    ) -> list[SpotifyItem]:
         """
         Fetches a user's top items from Spotify.
 
@@ -298,7 +303,7 @@ class SpotifyDataService(MusicService):
         """
 
         try:
-            params = {"time_range": time_range, "limit": limit}
+            params = {"time_range": time_range.value, "limit": limit}
             url = f"{self.base_url}/me/top/{item_type.value}s?" + urllib.parse.urlencode(params)
 
             data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers())
