@@ -60,6 +60,7 @@ class TopItemsService:
             )
 
             if not top_items_db:
+                logger.info("No top items found in DB")
                 top_items = await self.spotify_data_service.get_top_items(
                     item_type=item_type,
                     time_range=time_range,
