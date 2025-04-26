@@ -222,7 +222,7 @@ class EndpointRequester:
     async def get(
             self, url: str,
             headers: dict[str, str] | None = None,
-            params: dict[str, str] | None = None,
+            params: dict[str, Any] | None = None,
             timeout: float | None = None
     ):
         """

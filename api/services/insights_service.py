@@ -3,11 +3,12 @@ from collections import defaultdict
 import pydantic
 from loguru import logger
 
-from api.models import LyricsRequest, TopEmotion, EmotionalProfileResponse, EmotionalProfileRequest, \
+from api.data_structures.enums import TopItemTimeRange, TopItemType
+from api.data_structures.models import LyricsRequest, TopEmotion, EmotionalProfileResponse, EmotionalProfileRequest, \
     EmotionalTagsRequest, Emotion, SpotifyTrack, EmotionalTagsResponse
 from api.services.analysis_service import AnalysisService, AnalysisServiceException
 from api.services.lyrics_service import LyricsService, LyricsServiceException
-from api.services.music.spotify_data_service import SpotifyDataService, ItemType, SpotifyDataServiceException, TimeRange
+from api.services.music.spotify_data_service import SpotifyDataService, SpotifyDataServiceException
 
 
 class InsightsServiceException(Exception):
@@ -190,7 +191,7 @@ class InsightsService:
         top_emotions = sorted(average_emotions, key=lambda emotion: emotion.percentage, reverse=True)[:limit]
         return top_emotions
 
-    async def get_top_emotions(self, time_range: str, limit: int = 5) -> list[TopEmotion]:
+    async def get_top_emotions(self, time_range: TopItemTimeRange, limit: int = 5) -> list[TopEmotion]:
         """
         Retrieves the top emotions detected in a user's top Spotify tracks.
 
@@ -219,7 +220,7 @@ class InsightsService:
 
         try:
             # get top tracks and refreshed tokens (if expired)
-            top_items = await self.spotify_data_service.get_top_items(item_type=ItemType.TRACKS, time_range=time_range)
+            top_items = await self.spotify_data_service.get_top_items(item_type=TopItemType.TRACK, time_range=time_range)
             self._check_data_not_empty(data=top_items, label="top tracks")
             top_tracks = [SpotifyTrack(**item.model_dump()) for item in top_items]
 
@@ -284,7 +285,7 @@ class InsightsService:
         """
 
         try:
-            track_response = await self.spotify_data_service.get_item_by_id(item_id=track_id, item_type=ItemType.TRACKS)
+            track_response = await self.spotify_data_service.get_item_by_id(item_id=track_id, item_type=TopItemType.TRACK)
             track = SpotifyTrack(**track_response.model_dump())
 
             lyrics_request = LyricsRequest(track_id=track.id, artist_name=track.artist.name, track_title=track.name)

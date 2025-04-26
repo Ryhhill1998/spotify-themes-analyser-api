@@ -1,7 +1,7 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 import pytest
-from api.models import LyricsRequest, LyricsResponse
+from api.data_structures.models import LyricsRequest, LyricsResponse
 from api.services.lyrics_service import LyricsServiceException
 
 # 1. Test that get_lyrics_list returns [] if all get_lyrics tasks raise a LyricsServiceException.

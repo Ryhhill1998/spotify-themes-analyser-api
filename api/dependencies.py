@@ -11,6 +11,7 @@ from api.services.endpoint_requester import EndpointRequester
 from api.services.lyrics_service import LyricsService
 from api.services.music.spotify_auth_service import SpotifyAuthService
 from api.services.music.spotify_data_service import SpotifyDataService
+from api.services.top_items_service import TopItemsService
 from api.settings import Settings
 
 
@@ -22,20 +23,27 @@ def get_settings() -> Settings:
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 
 
-def get_token_from_cookies(request: Request, token_key: str) -> str:
+def get_item_from_cookies(request: Request, item_key: str) -> str:
     cookies = request.cookies
-    return cookies.get(token_key)
+    return cookies.get(item_key)
+
+
+def get_user_id_from_cookies(request: Request) -> str:
+    return get_item_from_cookies(request=request, item_key="user_id")
+
+
+UserIdDependency = Annotated[str, Depends(get_user_id_from_cookies)]
 
 
 def get_access_token_from_cookies(request: Request) -> str:
-    return get_token_from_cookies(request=request, token_key="access_token")
+    return get_item_from_cookies(request=request, item_key="access_token")
 
 
 AccessTokenDependency = Annotated[str, Depends(get_access_token_from_cookies)]
 
 
 def get_refresh_token_from_cookies(request: Request) -> str:
-    return get_token_from_cookies(request=request, token_key="refresh_token")
+    return get_item_from_cookies(request=request, item_key="refresh_token")
 
 
 RefreshTokenDependency = Annotated[str, Depends(get_refresh_token_from_cookies)]
@@ -132,3 +140,13 @@ def get_insights_service(
 
 
 InsightsServiceDependency = Annotated[InsightsService, Depends(get_insights_service)]
+
+
+def get_top_items_service(
+        db_service: DBServiceDependency,
+        spotify_data_service: SpotifyDataServiceDependency
+) -> TopItemsService:
+    return TopItemsService(db_service=db_service, spotify_data_service=spotify_data_service)
+
+
+TopItemsServiceDependency = Annotated[TopItemsService, Depends(get_top_items_service)]

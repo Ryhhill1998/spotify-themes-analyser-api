@@ -1,6 +1,6 @@
 import pytest
 
-from api.models import (
+from api.data_structures.models import (
     SpotifyItemsResponse,
     LyricsResponse,
     EmotionalProfileResponse,

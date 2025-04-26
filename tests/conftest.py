@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from api.models import TokenData
+from api.data_structures.models import TokenData
 
 
 @pytest.fixture

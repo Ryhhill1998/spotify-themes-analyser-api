@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 
+from api.data_structures.enums import TopItemType
 from api.dependencies import SpotifyDataServiceDependency
-from api.models import SpotifyArtist
-from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException, \
-    ItemType
+from api.data_structures.models import SpotifyArtist
+from api.services.music.spotify_data_service import SpotifyDataServiceNotFoundException, SpotifyDataServiceException
 
 router = APIRouter(prefix="/artists")
 
@@ -36,7 +36,7 @@ async def get_artist_by_id(artist_id: str, spotify_data_service: SpotifyDataServ
     """
 
     try:
-        artist = await spotify_data_service.get_item_by_id(item_id=artist_id, item_type=ItemType.ARTISTS)
+        artist = await spotify_data_service.get_item_by_id(item_id=artist_id, item_type=TopItemType.ARTIST)
         return artist
     except SpotifyDataServiceNotFoundException as e:
         error_message = "Could not find the requested artist"

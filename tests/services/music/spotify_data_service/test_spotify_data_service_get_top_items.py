@@ -1,6 +1,6 @@
 import pytest
 
-from api.models import SpotifyTrack, SpotifyTrackArtist, SpotifyItemsResponse, SpotifyImage, SpotifyArtist
+from api.data_structures.models import SpotifyTrack, SpotifyTrackArtist, SpotifyItemsResponse, SpotifyImage, SpotifyArtist
 from api.services.endpoint_requester import EndpointRequesterException, EndpointRequesterUnauthorisedException
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 from api.services.music.spotify_data_service import SpotifyDataServiceException, ItemType

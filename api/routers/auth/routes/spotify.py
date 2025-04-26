@@ -5,7 +5,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from api.dependencies import SpotifyAuthServiceDependency, SpotifyDataServiceDependency, DBServiceDependency
-from api.models import TokenData
+from api.data_structures.models import TokenData
 from api.services.music.spotify_auth_service import SpotifyAuthServiceException
 
 router = APIRouter(prefix="/spotify")

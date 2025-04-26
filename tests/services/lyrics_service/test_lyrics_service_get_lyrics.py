@@ -1,5 +1,5 @@
 import pytest
-from api.models import LyricsRequest, LyricsResponse
+from api.data_structures.models import LyricsRequest, LyricsResponse
 from api.services.endpoint_requester import EndpointRequesterException, EndpointRequesterNotFoundException
 from api.services.lyrics_service import LyricsServiceException, LyricsServiceNotFoundException
 

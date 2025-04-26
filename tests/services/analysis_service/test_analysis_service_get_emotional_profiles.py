@@ -1,7 +1,7 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 import pytest
-from api.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
+from api.data_structures.models import EmotionalProfileResponse, EmotionalProfile, EmotionalProfileRequest
 from api.services.analysis_service import AnalysisServiceException
 
 # 1. Test that get_emotional_profiles returns [] if all get_emotional_profile tasks raise an AnalysisServiceException.

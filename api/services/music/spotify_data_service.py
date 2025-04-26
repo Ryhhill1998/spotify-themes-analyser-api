@@ -1,12 +1,10 @@
-from enum import Enum
 import urllib.parse
-from functools import cached_property
 
 from loguru import logger
-
 import pydantic
 
-from api.models import SpotifyItem, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, SpotifyTrackData, \
+from api.data_structures.enums import TopItemType
+from api.data_structures.models import SpotifyItem, SpotifyTrack, SpotifyArtist, SpotifyTrackArtist, SpotifyTrackData, \
     SpotifyArtistData, SpotifyProfile, SpotifyProfileData
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterUnauthorisedException, \
     EndpointRequesterException, EndpointRequesterNotFoundException
@@ -53,41 +51,6 @@ class SpotifyDataServiceNotFoundException(SpotifyDataServiceException):
 
     def __init__(self, message):
         super().__init__(message)
-
-
-class ItemType(Enum):
-    """
-    Enum representing the types of items that can be retrieved from Spotify.
-
-    Attributes
-    ----------
-    ARTISTS : str
-        Represents the artists item type.
-    TRACKS : str
-        Represents the tracks item type.
-    """
-
-    ARTISTS = "artists"
-    TRACKS = "tracks"
-
-
-class TimeRange(Enum):
-    """
-    Enum representing the time range options for retrieving top items.
-
-    Attributes
-    ----------
-    SHORT : str
-        Represents the short-term time range.
-    MEDIUM : str
-        Represents the medium-term time range.
-    LONG : str
-        Represents the long-term time range.
-    """
-
-    SHORT = "short_term"
-    MEDIUM = "medium_term"
-    LONG = "long_term"
 
 
 class SpotifyDataService(MusicService):
@@ -268,7 +231,7 @@ class SpotifyDataService(MusicService):
 
         return top_artist
 
-    def _create_item(self, data: dict, item_type: ItemType) -> SpotifyItem:
+    def _create_item(self, data: dict, item_type: TopItemType) -> SpotifyItem:
         """
         Creates a TopItem (TopArtist or TopTrack) object based on the specified item type.
 
@@ -291,9 +254,9 @@ class SpotifyDataService(MusicService):
         """
 
         try:
-            if item_type == ItemType.TRACKS:
+            if item_type == TopItemType.TRACK:
                 return self._create_track(data=data)
-            elif item_type == ItemType.ARTISTS:
+            elif item_type == TopItemType.ARTIST:
                 return self._create_artist(data=data)
             else:
                 error_message = f"Invalid item_type: {item_type}"
@@ -308,7 +271,7 @@ class SpotifyDataService(MusicService):
             logger.error(error_message)
             raise SpotifyDataServiceException(error_message)
 
-    async def get_top_items(self, item_type: ItemType, time_range: str, limit: int = 30) -> list[SpotifyItem]:
+    async def get_top_items(self, item_type: TopItemType, time_range: str, limit: int = 30) -> list[SpotifyItem]:
         """
         Fetches a user's top items from Spotify.
 
@@ -336,7 +299,7 @@ class SpotifyDataService(MusicService):
 
         try:
             params = {"time_range": time_range, "limit": limit}
-            url = f"{self.base_url}/me/top/{item_type.value}?" + urllib.parse.urlencode(params)
+            url = f"{self.base_url}/me/top/{item_type.value}s?" + urllib.parse.urlencode(params)
 
             data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers())
 
@@ -352,7 +315,7 @@ class SpotifyDataService(MusicService):
             logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceException(error_message)
 
-    async def get_item_by_id(self, item_id: str, item_type: ItemType) -> SpotifyItem:
+    async def get_item_by_id(self, item_id: str, item_type: TopItemType) -> SpotifyItem:
         """
         Fetches a specific item (track or artist) from the Spotify API using its unique identifier.
 
@@ -379,7 +342,7 @@ class SpotifyDataService(MusicService):
         """
 
         try:
-            url = f"{self.base_url}/{item_type.value}/{item_id}"
+            url = f"{self.base_url}/{item_type.value}s/{item_id}"
 
             data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers())
 
@@ -392,6 +355,29 @@ class SpotifyDataService(MusicService):
             raise SpotifyDataServiceUnauthorisedException(error_message)
         except EndpointRequesterNotFoundException as e:
             error_message = f"Requested Spotify item not found. Item ID: {item_id}, item type: {item_type}"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceNotFoundException(error_message)
+        except EndpointRequesterException as e:
+            error_message = "Failed to make request to Spotify API"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceException(error_message)
+
+    async def get_many_items_by_ids(self, item_ids: list[str], item_type: TopItemType) -> list[SpotifyItem]:
+        try:
+            url = f"{self.base_url}/{item_type.value}s"
+            params = {"ids": ",".join(item_ids)}
+
+            data = await self.endpoint_requester.get(url=url, headers=self._get_bearer_auth_headers(), params=params)
+
+            items = [self._create_item(data=entry, item_type=item_type) for entry in data[f"{item_type.value}s"]]
+
+            return items
+        except EndpointRequesterUnauthorisedException as e:
+            error_message = "Invalid Spotify API access token"
+            logger.error(f"{error_message} - {e}")
+            raise SpotifyDataServiceUnauthorisedException(error_message)
+        except EndpointRequesterNotFoundException as e:
+            error_message = f"Requested Spotify items not found. Item type: {item_type}"
             logger.error(f"{error_message} - {e}")
             raise SpotifyDataServiceNotFoundException(error_message)
         except EndpointRequesterException as e:

@@ -3,7 +3,7 @@ import asyncio
 import pydantic
 from loguru import logger
 
-from api.models import LyricsRequest, LyricsResponse
+from api.data_structures.models import LyricsRequest, LyricsResponse
 from api.services.endpoint_requester import EndpointRequester, EndpointRequesterException, \
     EndpointRequesterNotFoundException
 
