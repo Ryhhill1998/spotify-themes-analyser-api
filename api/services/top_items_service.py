@@ -55,7 +55,8 @@ class TopItemsService:
             top_items_db = self.db_service.get_top_items(
                 user_id=user_id,
                 item_type=item_type,
-                time_range=time_range
+                time_range=time_range,
+                limit=limit
             )
 
             if not top_items_db:

@@ -31,7 +31,13 @@ class DBService:
             logger.error(f"{error_message} - {e}")
             raise DBServiceException(error_message)
 
-    def get_top_items(self, user_id: str, item_type: TopItemType, time_range: TopItemTimeRange) -> list[dict]:
+    def get_top_items(
+            self,
+            user_id: str,
+            item_type: TopItemType,
+            time_range: TopItemTimeRange,
+            limit: int
+    ) -> list[dict]:
         try:
             cursor = self.connection.cursor(dictionary=True)
             select_statement = (
@@ -42,14 +48,15 @@ class DBService:
                     "AND time_range = %s "
                     "ORDER BY collected_date DESC "
                     "LIMIT 1"
-                ")"
+                ") "
                 "SELECT * " 
                 f"FROM top_{item_type.value} t "
                 "JOIN most_recent_date rd " 
                 "ON t.collected_date = rd.collected_date "
                 "WHERE t.spotify_user_id = %s "
                 "AND t.time_range = %s "
-                "ORDER BY t.position;"
+                "ORDER BY t.position "
+                f"LIMIT {limit};"
             )
             cursor.execute(select_statement, (user_id, time_range.value, user_id, time_range.value))
             results = cursor.fetchall()
