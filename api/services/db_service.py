@@ -58,8 +58,10 @@ class DBService:
                 "ORDER BY t.position "
                 f"LIMIT {limit};"
             )
+            logger.info(f"Select query: {select_statement, (user_id, time_range.value, user_id, time_range.value)}")
             cursor.execute(select_statement, (user_id, time_range.value, user_id, time_range.value))
             results = cursor.fetchall()
+            logger.info(f"get_top_items results: {results}")
             cursor.close()
             return results
         except mysql.connector.Error as e:
